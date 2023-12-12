@@ -63,15 +63,13 @@ def main():
 
     #print(len(imgs_list))
     imgs_list = sorted(imgs_list)
+    idx_patch = 0
 
     for i in range(0, len(imgs_list), 2):
         img_path_0 = imgs_list[i]
         img_path_1 = imgs_list[i+1]
         # np 格式
         img_hr_0, img_hr_1, img_lr_0, img_lr_1 = process_images(img_path_0, img_path_1, scale = scale)
-
-        idx_patch = 0
-
         for x_lr in range(3, img_lr_0.shape[0] - 33, 20):
             for y_lr in range(3, img_lr_0.shape[1] - 93, 20):
                 x_hr = (x_lr - 1) * scale + 1
