@@ -8,6 +8,8 @@ import numpy as np
 仿照 iPASSR 对Flickr1024数据集的 训练集图像 进行分patch处理
 原matlab代码: https://github.com/YingqianWang/iPASSR/blob/main/data/train/GenerateTrainingPatches.m
 
+注 这里只对flickr1024进行了处理  原代码还加上了 Middlebury 数据集的处理
+
 """
 
 
@@ -60,6 +62,7 @@ def main():
             imgs_list.append(os.path.join(data_dir, fname))
 
     #print(len(imgs_list))
+    imgs_list = sorted(imgs_list)
 
     for i in range(0, len(imgs_list), 2):
         img_path_0 = imgs_list[i]
