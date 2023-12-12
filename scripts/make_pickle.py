@@ -2,7 +2,7 @@ import numpy as np
 import os
 import cv2
 
-PATH = './datasets/SR/NTIRE22-StereoSR/Train'
+PATH = './datasets/Flickr1024/Train'
 
 LR_FOLDER = 'LR_x4'
 HR_FOLDER = 'HR'
