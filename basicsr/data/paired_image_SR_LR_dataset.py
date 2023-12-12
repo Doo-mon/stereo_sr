@@ -231,8 +231,7 @@ class PairedStereoImageDataset(data.Dataset):
         lq_path_L = os.path.join(self.lq_folder, self.lq_files[index], 'lr0.png')
         lq_path_R = os.path.join(self.lq_folder, self.lq_files[index], 'lr1.png')
 
-        # lq_path = self.paths[index]['lq_path']
-        # print(', lq path', lq_path)
+
         img_bytes = self.file_client.get(lq_path_L, 'lq')
         try:
             img_lq_L = imfrombytes(img_bytes, float32=True)
@@ -245,6 +244,7 @@ class PairedStereoImageDataset(data.Dataset):
         except:
             raise Exception("lq path {} not working".format(lq_path_R))
 
+        ## 在色彩维度进行拼接 方便对左右视图同时进行变换
         img_gt = np.concatenate([img_gt_L, img_gt_R], axis=-1)
         img_lq = np.concatenate([img_lq_L, img_lq_R], axis=-1)
 
@@ -258,6 +258,7 @@ class PairedStereoImageDataset(data.Dataset):
                 gt_size = int(self.opt['gt_size'])
                 gt_size_h, gt_size_w = gt_size, gt_size
 
+            # 色彩通道的随机转换   注意：左右视图对应转换相同 由idx确定
             if 'flip_RGB' in self.opt and self.opt['flip_RGB']:
                 idx = [
                     [0, 1, 2, 3, 4, 5],
@@ -273,18 +274,13 @@ class PairedStereoImageDataset(data.Dataset):
 
             # random crop
             img_gt, img_lq = img_gt.copy(), img_lq.copy()
-            img_gt, img_lq = paired_random_crop_hw(img_gt, img_lq, gt_size_h, gt_size_w, scale,
-                                                'gt_path_L_and_R')
+            img_gt, img_lq = paired_random_crop_hw(img_gt, img_lq, gt_size_h, gt_size_w, scale,'gt_path_L_and_R')
             # flip, rotation
-            imgs, status = augment([img_gt, img_lq], self.opt['use_hflip'],
-                                    self.opt['use_rot'], vflip=self.opt['use_vflip'], return_status=True)
-
+            imgs, status = augment([img_gt, img_lq], self.opt['use_hflip'], self.opt['use_rot'], vflip=self.opt['use_vflip'], return_status=True)
 
             img_gt, img_lq = imgs
-
-        img_gt, img_lq = img2tensor([img_gt, img_lq],
-                                    bgr2rgb=True,
-                                    float32=True)
+        # 这里把色彩维放到第一维了 torch.Size([6, 60, 180]) torch.Size([6, 30, 90])
+        img_gt, img_lq = img2tensor([img_gt, img_lq], bgr2rgb=True, float32=True)
         # normalize
         if self.mean is not None or self.std is not None:
             normalize(img_lq, self.mean, self.std, inplace=True)

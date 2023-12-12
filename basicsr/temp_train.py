@@ -87,10 +87,12 @@ def init_loggers(opt):
 def create_train_val_dataloader(opt, logger):
     # create train and val dataloaders
     train_loader, val_loader = None, None
-    for phase, dataset_opt in opt['datasets'].items(): # 实际上只有 train 和 val 两个关键字
+    for phase, dataset_opt in opt['datasets'].items(): # 实际上只有 train 和 val 两个键
         if phase == 'train':
             dataset_enlarge_ratio = dataset_opt.get('dataset_enlarge_ratio', 1)
-            train_set = create_dataset(dataset_opt)
+            # 这里面要用到 name 和 type 两个键 最重要的是 type 通过data下面以 _dataset.py 结尾中的文件定义出来的类名  以参数字典作为输入
+            # 注 双目数据集 PairedStereoImageDataset 被定义在 paired_image_SR_LR_dataset.py 中
+            train_set = create_dataset(dataset_opt) 
             train_sampler = EnlargedSampler(train_set, opt['world_size'], opt['rank'], dataset_enlarge_ratio)
             train_loader = create_dataloader(
                 train_set,
