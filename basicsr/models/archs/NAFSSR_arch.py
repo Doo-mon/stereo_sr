@@ -136,6 +136,9 @@ class NAFSSR(Local_Base, NAFNetSR):
             # 作用： 寻找所有的 AdaptiveAvgPool2d 层，并用一个自定义的 AvgPool2d 层替换它们
             self.convert(base_size=base_size, train_size=train_size, fast_imp=fast_imp)
 
+
+
+# 下面的语句是测试用
 if __name__ == '__main__':
     pass
     # num_blks = 128

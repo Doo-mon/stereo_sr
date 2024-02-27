@@ -12,6 +12,8 @@ from basicsr.utils import get_root_logger, scandir
 # automatically scan and import model modules
 # scan all the files under the 'models' folder and collect files ending with
 # '_model.py'
+
+# 自动扫描并导入模型模块
 model_folder = osp.dirname(osp.abspath(__file__))
 model_filenames = [
     osp.splitext(osp.basename(v))[0] for v in scandir(model_folder)

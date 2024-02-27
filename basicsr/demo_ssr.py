@@ -92,7 +92,8 @@ def main():
 
     ## 2. run inference
     opt['dist'] = False
-    model = create_model(opt)
+    model = create_model(opt) # 根据配置文件 如果是双目超分 调用的基本模型是 image_restoration
+
 
     model.feed_data(data={'lq': img.unsqueeze(dim=0)})
 

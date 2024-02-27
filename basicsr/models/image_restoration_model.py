@@ -41,6 +41,7 @@ class ImageRestorationModel(BaseModel):
 
         self.scale = int(opt['scale'])
 
+    # 确定像素级损失还是感知损失
     def init_training_settings(self):
         self.net_g.train()
         train_opt = self.opt['train']
@@ -106,6 +107,7 @@ class ImageRestorationModel(BaseModel):
         if 'gt' in data:
             self.gt = data['gt'].to(self.device)
 
+    # 这个是将lq图像分成多个patches
     def grids(self):
         b, c, h, w = self.gt.size()
         self.original_size = (b, c, h, w)
@@ -160,6 +162,7 @@ class ImageRestorationModel(BaseModel):
         self.lq = torch.cat(parts, dim=0)
         self.idxes = idxes
 
+    # 这个是将输出的分块结果重新拼回来
     def grids_inverse(self):
         preds = torch.zeros(self.original_size)
         b, c, h, w = self.original_size
@@ -186,6 +189,7 @@ class ImageRestorationModel(BaseModel):
         self.output = (preds / count_mt).to(self.device)
         self.lq = self.origin_lq
 
+    # 更新模型参数
     def optimize_parameters(self, current_iter, tb_logger):
         self.optimizer_g.zero_grad()
 
@@ -213,7 +217,6 @@ class ImageRestorationModel(BaseModel):
         # perceptual loss
         if self.cri_perceptual:
             l_percep, l_style = self.cri_perceptual(self.output, self.gt)
-        #
             if l_percep is not None:
                 l_total += l_percep
                 loss_dict['l_percep'] = l_percep

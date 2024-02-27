@@ -54,8 +54,7 @@ class BaseModel():
         if self.opt['dist']:
             return self.dist_validation(dataloader, current_iter, tb_logger, save_img, rgb2bgr, use_image)
         else:
-            return self.nondist_validation(dataloader, current_iter, tb_logger,
-                                    save_img, rgb2bgr, use_image)
+            return self.nondist_validation(dataloader, current_iter, tb_logger, save_img, rgb2bgr, use_image)
 
     def get_current_log(self):
         return self.log_dict
@@ -70,8 +69,7 @@ class BaseModel():
 
         net = net.to(self.device)
         if self.opt['dist']:
-            find_unused_parameters = self.opt.get('find_unused_parameters',
-                                                  False)
+            find_unused_parameters = self.opt.get('find_unused_parameters', False)
             net = DistributedDataParallel(
                 net,
                 device_ids=[torch.cuda.current_device()],
