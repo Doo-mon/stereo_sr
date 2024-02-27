@@ -22,10 +22,14 @@ from basicsr.utils.options import dict2str, parse
 def parse_options(is_train=True):
     parser = argparse.ArgumentParser()
     # 这个配置文件是必要的
-    parser.add_argument('-opt', type=str, required=True, help='Path to option YAML file.')
+    # parser.add_argument('-opt', type=str, required=True, help='Path to option YAML file.')
+
+    parser.add_argument('--opt', type=str, default="~/stereo_sr/options/temp_train_4x.yml", help='Path to option YAML file.')
     parser.add_argument('--launcher', choices=['none', 'pytorch', 'slurm'], default='pytorch', help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
 
+
+    # 这两个可以不用输入 但是如果输入了就会覆盖配置文件中的路径
     parser.add_argument('--input_path', type=str, help='The path to the input image.')
     parser.add_argument('--output_path', type=str, help='The path to the output image.')
 

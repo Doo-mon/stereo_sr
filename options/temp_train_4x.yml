@@ -1,7 +1,7 @@
 # 自己修改的配置文件
 
 # general settings
-name: temp_train_for_ssr
+name: temp_train_for_ssr_4x
 model_type: ImageRestorationModel
 scale: 4
 num_gpu: 8

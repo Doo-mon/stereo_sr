@@ -5,7 +5,7 @@
 # Copyright 2018-2020 BasicSR Authors
 # ------------------------------------------------------------------------
 # general settings
-name: NAFSSR-B_4x
+name: temp_test_for_ssr_4x
 model_type: ImageRestorationModel
 scale: 4
 num_gpu: 1 # set num_gpu: 0 for cpu mode
@@ -55,7 +55,7 @@ network_g:
 
 # path
 path:
-  pretrain_network_g: experiments/pretrained_models/NAFSSR-B_4x.pth
+  pretrain_network_g: experiments/pretrained_models/temp_train_for_ssr_4x.pth
   strict_load_g: true
   resume_state: ~
 
