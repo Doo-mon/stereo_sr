@@ -98,16 +98,10 @@ class NAFNetSR(nn.Module):
     def __init__(self, up_scale=4, width=48, num_blks=16, img_channel=3, drop_path_rate=0., drop_out_rate=0., fusion_from=-1, fusion_to=-1, dual=False):
         super().__init__()
         self.dual = dual    # dual input for stereo SR (left view, right view)
-        self.intro = nn.Conv2d(in_channels=img_channel, out_channels=width, kernel_size=3, padding=1, stride=1, groups=1,
-                              bias=True)
+        self.intro = nn.Conv2d(in_channels=img_channel, out_channels=width, kernel_size=3, padding=1, stride=1, groups=1, bias=True)
+        # 自定义序列 方便多输入
         self.body = MySequential(
-            *[DropPath(
-                drop_path_rate, 
-                NAFBlockSR(
-                    width, 
-                    fusion=(fusion_from <= i and i <= fusion_to), 
-                    drop_out_rate=drop_out_rate
-                )) for i in range(num_blks)]
+            *[DropPath(drop_path_rate, NAFBlockSR(width, fusion=(fusion_from <= i and i <= fusion_to), drop_out_rate=drop_out_rate)) for i in range(num_blks)]
         )
 
         self.up = nn.Sequential(
@@ -138,27 +132,30 @@ class NAFSSR(Local_Base, NAFNetSR):
 
         self.eval()
         with torch.no_grad():
+            # 下面这句话 调用了一个 replace_layer 的函数
+            # 作用： 寻找所有的 AdaptiveAvgPool2d 层，并用一个自定义的 AvgPool2d 层替换它们
             self.convert(base_size=base_size, train_size=train_size, fast_imp=fast_imp)
 
 if __name__ == '__main__':
-    num_blks = 128
-    width = 128
-    droppath=0.1
-    train_size = (1, 6, 30, 90)
+    pass
+    # num_blks = 128
+    # width = 128
+    # droppath=0.1
+    # train_size = (1, 6, 30, 90)
 
-    net = NAFSSR(up_scale=2,train_size=train_size, fast_imp=True, width=width, num_blks=num_blks, drop_path_rate=droppath)
+    # net = NAFSSR(up_scale=2,train_size=train_size, fast_imp=True, width=width, num_blks=num_blks, drop_path_rate=droppath)
 
-    inp_shape = (6, 64, 64)
+    # inp_shape = (6, 64, 64)
 
-    from ptflops import get_model_complexity_info
-    FLOPS = 0
-    macs, params = get_model_complexity_info(net, inp_shape, verbose=False, print_per_layer_stat=True)
+    # from ptflops import get_model_complexity_info
+    # FLOPS = 0
+    # macs, params = get_model_complexity_info(net, inp_shape, verbose=False, print_per_layer_stat=True)
 
-    # params = float(params[:-4])
-    print(params)
-    macs = float(macs[:-4]) + FLOPS / 10 ** 9
+    # # params = float(params[:-4])
+    # print(params)
+    # macs = float(macs[:-4]) + FLOPS / 10 ** 9
 
-    print('mac', macs, params)
+    # print('mac', macs, params)
 
     # from basicsr.models.archs.arch_util import measure_inference_speed
     # net = net.cuda()
