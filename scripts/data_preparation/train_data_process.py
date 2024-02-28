@@ -14,7 +14,7 @@ import numpy as np
 
 def parser_setting():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_dir", default="..\..\datasets", type=str)
+    parser.add_argument("--data_dir", default="../../datasets", type=str)
     parser.add_argument("--dataset_name", default="Flickr1024", type=str)
     parser.add_argument("--data_type", default="Train", type=str)
 

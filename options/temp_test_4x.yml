@@ -16,32 +16,32 @@ datasets:
   test0:
     name: KITTI2012
     type: PairedStereoImageDataset
-    dataroot_gt: datasets/StereoSR/test/KITTI2012/hr
-    dataroot_lq: datasets/StereoSR/test/KITTI2012/lr_x4
+    dataroot_gt: ~/stereo_sr/datasets/test_data/KITTI2012/hr
+    dataroot_lq: ~/stereo_sr/datasets/test_data/KITTI2012/lr_x4
     io_backend:
       type: disk
 
   test1:
     name: KITTI2015
     type: PairedStereoImageDataset
-    dataroot_gt: datasets/StereoSR/test/KITTI2015/hr
-    dataroot_lq: datasets/StereoSR/test/KITTI2015/lr_x4
+    dataroot_gt: ~/stereo_sr/datasets/test_data/KITTI2015/hr
+    dataroot_lq: ~/stereo_sr/datasets/test_data/KITTI2015/lr_x4
     io_backend:
       type: disk
     
   test2:
     name: Middlebury
     type: PairedStereoImageDataset
-    dataroot_gt: datasets/StereoSR/test/Middlebury/hr
-    dataroot_lq: datasets/StereoSR/test/Middlebury/lr_x4
+    dataroot_gt: ~/stereo_sr/datasets/test_data/Middlebury/hr
+    dataroot_lq: ~/stereo_sr/datasets/test_data/Middlebury/lr_x4
     io_backend:
       type: disk
   
   test3:
     name: Flickr1024
     type: PairedStereoImageDataset
-    dataroot_gt: datasets/StereoSR/test/Flickr1024/hr
-    dataroot_lq: datasets/StereoSR/test/Flickr1024/lr_x4
+    dataroot_gt: ~/stereo_sr/datasets/test_data/Flickr1024/hr
+    dataroot_lq: ~/stereo_sr/datasets/test_data/Flickr1024/lr_x4
     io_backend:
       type: disk
 

@@ -11,13 +11,14 @@ datasets:
   train:
     name: Flickr1024-ssr-train
     type: PairedStereoImageDataset
-    dataroot_gt: ~/stereo_sr/datasets/Flickr1024/patches_x4/
-    dataroot_lq: ~/stereo_sr/datasets/Flickr1024/patches_x4/
+    dataroot_gt: ~/stereo_sr/datasets/train_data/patches_x4/
+    dataroot_lq: ~/stereo_sr/datasets/train_data/patches_x4/
     io_backend:
       type: disk
 
-    gt_size_h: 60
-    gt_size_w: 180
+    # 注意这里gt的宽高是数据处理时设置lr图像的 xn 倍
+    gt_size_h: 120
+    gt_size_w: 360
     use_hflip: true
     use_vflip: true
     use_rot: false
@@ -33,15 +34,15 @@ datasets:
   val:
     name: Flickr1024-ssr-val
     type: PairedStereoImageDataset
-    dataroot_gt: datasets/StereoSR/test/Flickr1024/hr
-    dataroot_lq: datasets/StereoSR/test/Flickr1024/lr_x4
+    dataroot_gt: ~/stereo_sr/datasets/val_data/hr/
+    dataroot_lq: ~/stereo_sr/datasets/val_data/lr_x4/
     io_backend:
       type: disk
 
 # network structures
 network_g:
   type: NAFSSR # 这里对应arch
-  up_scale: 2
+  up_scale: 4
   width: 96
   num_blks: 64
   drop_path_rate: 0.2
