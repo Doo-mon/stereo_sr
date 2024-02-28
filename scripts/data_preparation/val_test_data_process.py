@@ -62,18 +62,22 @@ def main():
     os.makedirs(lr_dir, exist_ok=True)
 
 
-    for i in range(0,len(imgs_list)):
+    for i in range(0,len(imgs_list),2):
         img_hr_0, img_lr_0 = process_images(imgs_list[i], scale = scale)
+        img_hr_1, img_lr_1 = process_images(imgs_list[i+1], scale = scale)
+
         img_name = os.path.basename(imgs_list[i])
         img_name = os.path.splitext(img_name)[0]
 
-        hr_img_dir = os.path.join(hr_dir, f'{img_name}.png')
-        lr_img_dir = os.path.join(lr_dir, f'{img_name}.png')
+        hr_img_dir = os.path.join(hr_dir, f'{img_name}')
+        lr_img_dir = os.path.join(lr_dir, f'{img_name}')
 
         
-        Image.fromarray(np.uint8(img_hr_0)).save(hr_img_dir)
-        Image.fromarray(np.uint8(img_lr_0)).save(lr_img_dir)
-        print(f'{i+1} {args.data_type} samples have been generated...')
+        Image.fromarray(np.uint8(img_hr_0)).save(os.path.join(hr_img_dir, 'hr_0.png'))
+        Image.fromarray(np.uint8(img_hr_1)).save(os.path.join(hr_img_dir, 'hr_1.png'))
+        Image.fromarray(np.uint8(img_lr_0)).save(os.path.join(lr_img_dir, 'lr_0.png'))
+        Image.fromarray(np.uint8(img_lr_1)).save(os.path.join(lr_img_dir, 'lr_1.png'))
+        print(f'{i} {args.data_type} samples have been generated...')
 
 
 if __name__=="__main__":
