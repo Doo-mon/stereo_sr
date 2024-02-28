@@ -349,8 +349,8 @@ def calculate_ssim_left(img1,
     img2 = img2[:,64:,:3]
     return calculate_ssim(img1=img1, img2=img2, crop_border=0, input_order=input_order, test_y_channel=test_y_channel, ssim3d=ssim3d)
 
-def calculate_skimage_ssim(img1, img2):
-    return structural_similarity(img1, img2, multichannel=True)
+def calculate_skimage_ssim(img1, img2, channel_axis=2):
+    return structural_similarity(img1, img2, multichannel=True, channel_axis=channel_axis)
 
 def calculate_skimage_ssim_left(img1, img2):
     img1 = img1[:,64:,:3]

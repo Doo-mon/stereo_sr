@@ -2,7 +2,7 @@
 .DS_Store
 .idea/*
 
-
+*.ipynb_checkpoints*
 *results*
 *__pycache__*
 

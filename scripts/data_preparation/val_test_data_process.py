@@ -58,8 +58,6 @@ def main():
 
     hr_dir = os.path.join(output_dir, 'hr')
     lr_dir = os.path.join(output_dir, f'lr_x{scale}')
-    os.makedirs(hr_dir, exist_ok=True)
-    os.makedirs(lr_dir, exist_ok=True)
 
 
     for i in range(0,len(imgs_list),2):
@@ -68,9 +66,12 @@ def main():
 
         img_name = os.path.basename(imgs_list[i])
         img_name = os.path.splitext(img_name)[0]
+        img_name = img_name.split('_')[0]
 
         hr_img_dir = os.path.join(hr_dir, f'{img_name}')
         lr_img_dir = os.path.join(lr_dir, f'{img_name}')
+        os.makedirs(hr_img_dir, exist_ok=True)
+        os.makedirs(lr_img_dir, exist_ok=True)
 
         
         Image.fromarray(np.uint8(img_hr_0)).save(os.path.join(hr_img_dir, 'hr_0.png'))

@@ -24,7 +24,7 @@ def parse_options(is_train=True):
     # 这个配置文件是必要的
     # parser.add_argument('-opt', type=str, required=True, help='Path to option YAML file.')
 
-    parser.add_argument('--opt', type=str, default="~/stereo_sr/options/temp_train_4x.yml", help='Path to option YAML file.')
+    parser.add_argument('--opt', type=str, default="./options/temp_train_4x.yml", help='Path to option YAML file.')
     parser.add_argument('--launcher', choices=['none', 'pytorch', 'slurm'], default='pytorch', help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
 
