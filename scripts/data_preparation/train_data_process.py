@@ -5,18 +5,20 @@ import numpy as np
 
 """
 
-仿照 iPASSR 对Flickr1024数据集的 训练集图像 进行分patch处理
+仿照 iPASSR 对Flickr1024数据集的 训练集图像 进行分patch处理 (并通过bicubic插值得到低分辨率图像)
 原matlab代码: https://github.com/YingqianWang/iPASSR/blob/main/data/train/GenerateTrainingPatches.m
 
-注 这里只对flickr1024进行了处理  原代码还加上了 Middlebury 数据集的处理
+注 这里只对flickr1024进行了处理 如果需要扩充数据集 可以添加对其他数据集进行类似处理
 
 """
 
 def parser_setting():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_dir", default="../../datasets/Flickr1024", type=str)
+    parser.add_argument("--data_dir", default="..\..\datasets", type=str)
+    parser.add_argument("--dataset_name", default="Flickr1024", type=str)
     parser.add_argument("--data_type", default="Train", type=str)
-    parser.add_argument("--scale", default=2, type=int)
+
+    parser.add_argument("--scale", default=2, type=int) # 设置放缩尺寸
 
     parser.add_argument("--patch_width", default=90, type=int) # 横向长度
     parser.add_argument("--patch_height", default=30, type=int) # 纵向长度
@@ -36,6 +38,7 @@ def modcrop(image, scale):
     image = image.crop((0, 0, size[0], size[1]))
     return image
 
+# 通过Bicubic获得低分辨率图像
 def process_images(img_path_0, img_path_1, scale):
     img_0 = Image.open(img_path_0)
     img_1 = Image.open(img_path_1)
@@ -55,7 +58,14 @@ def process_images(img_path_0, img_path_1, scale):
 
 def main():
     args = parser_setting()
-    data_dir = os.path.join(args.data_dir, args.data_type)
+    data_dir = os.path.join(args.data_dir, args.dataset_name)
+    data_dir = os.path.join(data_dir, args.data_type)
+
+    # 保存到训练数据文件夹
+    output_dir = os.path.join(args.data_dir, 'train_data')
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
+
 
     imgs_list = []
     img_extensions = ["png",]
@@ -87,7 +97,7 @@ def main():
                 lr_patch_0 = img_lr_0[x_lr - 1:x_lr + patch_height - 1, y_lr - 1:y_lr + patch_width - 1, :]
                 lr_patch_1 = img_lr_1[x_lr - 1:x_lr + patch_height - 1, y_lr - 1:y_lr + patch_width - 1, :]
 
-                patch_dir = os.path.join(args.data_dir, f'patches_x{scale}/{idx_patch:06d}')
+                patch_dir = os.path.join(output_dir, f'patches_x{scale}/{idx_patch:06d}')
                 os.makedirs(patch_dir, exist_ok=True)
                 Image.fromarray(np.uint8(hr_patch_0)).save(f'{patch_dir}/hr0.png')
                 Image.fromarray(np.uint8(hr_patch_1)).save(f'{patch_dir}/hr1.png')
