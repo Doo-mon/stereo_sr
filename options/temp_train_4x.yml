@@ -1,37 +1,42 @@
-# 自己修改的配置文件
+# 训练用配置文件
 
-# general settings
-name: temp_train_for_ssr_4x
-model_type: ImageRestorationModel
-scale: 4
-num_gpu: 1
-manual_seed: 10
+# ===== 通用设置 ======
+name: temp_train_for_ssr_4x # 实验名称 这个会作为文件夹的名字保存到experiments文件夹下
+model_type: ImageRestorationModel # 在 models 文件夹下面被定义才有效
+scale: 4 # 放大倍数
+num_gpu: 1 # 使用的gpu数量
+manual_seed: 10 # 训练种子
 
+
+# ===== 数据集设置 ===== 
 datasets:
   train:
     name: Flickr1024-ssr-train
-    type: PairedStereoImageDataset
+    type: PairedStereoImageDataset # 在 data 文件夹下面被定义才有效
+    # 训练数据gt和lq图是放在一起的
     dataroot_gt: ~/stereo_sr/datasets/train_data/patches_x4/
     dataroot_lq: ~/stereo_sr/datasets/train_data/patches_x4/
-    io_backend:
+    io_backend: # 数据保存在磁盘上
       type: disk
 
     # 注意这里gt的宽高是数据处理时设置lr图像的 xn 倍
     gt_size_h: 120
     gt_size_w: 360
+
+    # 数据增强的方式
     use_hflip: true
     use_vflip: true
     use_rot: false
     flip_RGB: true
 
-    # data loader
+    # dataloader的设置  这里主要注意 batch_size_per_gpu 太大会爆内存！
     use_shuffle: true
     num_worker_per_gpu: 4
     batch_size_per_gpu: 2
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
 
-  val:
+  val: # 同上
     name: Flickr1024-ssr-val
     type: PairedStereoImageDataset
     dataroot_gt: ~/stereo_sr/datasets/val_data/hr/
@@ -39,23 +44,28 @@ datasets:
     io_backend:
       type: disk
 
-# network structures
+
+# ===== 网络结构设置 =====  
 network_g:
-  type: NAFSSR # 这里对应arch
-  up_scale: 4
+  type: NAFSSR # 在 models/arch 文件夹下面被定义才有效
+  up_scale: 4 # 要和上面的scale一致
+
+  # 下面的设置决定了网络的结构和大小
   width: 96
   num_blks: 64
   drop_path_rate: 0.2
   train_size: [1, 6, 30, 90]
   drop_out_rate: 0.
 
-# path
+
+# ===== 预训练和恢复设置 ===== 
 path:
   pretrain_network_g: ~
   strict_load_g: true
   resume_state: ~
 
-# training settings
+
+# ===== 训练设置 ===== 
 train:
   optim_g:
     type: AdamW
@@ -72,21 +82,22 @@ train:
   warmup_iter: -1 # no warm up
   mixup: false
 
-  # losses
+  # 训练loss的设置
   pixel_opt:
     type: MSELoss
     loss_weight: 1.
     reduction: mean
 
-# validation settings
+
+# ===== 验证设置 ===== 
 val:
-  val_freq: !!float 2e4
+  val_freq: !!float 2e4 # 每n次iter验证一次 不宜太频繁，会影响训练速度
   save_img: false
   trans_num: 1
 
   max_minibatch: 1
 
-  metrics:
+  metrics: # 评价指标
     psnr: # metric name, can be arbitrary
       type: calculate_psnr
       crop_border: 0
@@ -94,16 +105,18 @@ val:
     ssim:
       type: calculate_skimage_ssim
 
-# logging settings
-logger:
-  print_freq: 200
-  save_checkpoint_freq: !!float 1e4
-  use_tb_logger: true
+
+# ===== 记录和打印设置 ===== 
+logger: 
+  print_freq: 200 # 每n次iter打印一次
+  save_checkpoint_freq: !!float 1e4 # 每n次iter保存一次模型
+  use_tb_logger: true # TensorBoard 日志记录器
   wandb:
     project: ~
     resume_id: ~
 
-# dist training settings
+
+# ===== 分布式训练设置 ===== 
 dist_params:
-  backend: nccl
-  port: 29500
+  backend: nccl # 指定了分布式通信使用的后端。在PyTorch中，nccl 是专为NVIDIA GPU设计的
+  port: 29500 # 用于节点间通信的端口 每个参与分布式训练的节点需要能够通过这个端口相互通信，因此这个端口应该在所有节点上保持开放
