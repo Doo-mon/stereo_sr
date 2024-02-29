@@ -1,6 +1,7 @@
 # 训练用配置文件
 
 # ===== 通用设置 ======
+# 如果名字含有debug 则会有一些不同
 name: temp_train_for_ssr_4x # 实验名称 这个会作为文件夹的名字保存到experiments文件夹下
 model_type: ImageRestorationModel # 在 models 文件夹下面被定义才有效
 scale: 4 # 放大倍数
