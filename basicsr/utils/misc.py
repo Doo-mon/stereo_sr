@@ -151,6 +151,8 @@ def check_resume(opt, resume_iter):
     if opt['path']['resume_state']:
         # get all the networks
         networks = [key for key in opt.keys() if key.startswith('network_')]
+
+        # 这里说明配置文件里面那里写是没有用的
         flag_pretrain = False
         for network in networks:
             if opt['path'].get(f'pretrain_{network}') is not None:
@@ -158,12 +160,14 @@ def check_resume(opt, resume_iter):
         if flag_pretrain:
             logger.warning(
                 'pretrain_network path will be ignored during resuming.')
+            
         # set pretrained model paths
         for network in networks:
-            name = f'pretrain_{network}'
-            basename = network.replace('network_', '')
+            name = f'pretrain_{network}' # pretrain_network_g
+            basename = network.replace('network_', '') # g
+            # 如果没有ignore_resume_networks 或者 当前网络 g 不在ignore_resume_networks中
             if opt['path'].get('ignore_resume_networks') is None or (
-                    basename not in opt['path']['ignore_resume_networks']):
+                    basename not in opt['path']['ignore_resume_networks']): 
                 opt['path'][name] = osp.join(
                     opt['path']['models'], f'net_{basename}_{resume_iter}.pth')
                 logger.info(f"Set {name} to {opt['path'][name]}")

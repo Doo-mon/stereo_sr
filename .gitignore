@@ -12,4 +12,5 @@ experiments
 datasets
 basicsr.egg-info
 
-temp_test.py
+# 忽略掉某个特定文件
+temp_code.py
