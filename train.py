@@ -224,7 +224,7 @@ def main():
             # update learning rate
             model.update_learning_rate(current_iter, warmup_iter=opt['train'].get('warmup_iter', -1))
             # training
-            model.feed_data(train_data, is_val=False)
+            model.feed_data(train_data, is_val=False) # 这个单纯就是设置了 self.lq 和 self.gt
             result_code = model.optimize_parameters(current_iter, tb_logger)
 
             iter_time = time.time() - iter_time

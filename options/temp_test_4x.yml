@@ -50,7 +50,7 @@ network_g:
 
 # path
 path:
-  pretrain_network_g: experiments/pretrained_models/temp_train_for_ssr_4x.pth
+  pretrain_network_g: experiments/pretrained_models/temp_train_for_ssr_4x.pth # 测试的时候这个是必须输入的
   strict_load_g: true
   resume_state: ~
 

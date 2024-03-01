@@ -41,7 +41,7 @@ class ImageRestorationModel(BaseModel):
 
         self.scale = int(opt['scale'])
 
-    # 确定像素级损失还是感知损失
+    # 一些初始化设置 以及 确定像素级损失还是感知损失
     def init_training_settings(self):
         self.net_g.train()
         train_opt = self.opt['train']
@@ -382,6 +382,7 @@ class ImageRestorationModel(BaseModel):
                                                tb_logger, metrics_dict)
         return 0.
 
+    # 这个函数没有实现
     def nondist_validation(self, *args, **kwargs):
         logger = get_root_logger()
         logger.warning('nondist_validation is not implemented. Run dist_validation.')
