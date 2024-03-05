@@ -5,12 +5,13 @@
 *.ipynb_checkpoints*
 *results*
 *__pycache__*
+*.egg*
 
-tb_logger
+tb_logger/
 logs/
-experiments
-datasets
+experiments/
+datasets/
 basicsr.egg-info
 
-# 忽略掉某个特定文件
+# Ignore specific files
 temp_code.py
