@@ -4,6 +4,17 @@ from PIL import Image
 import numpy as np
 
 
+"""
+    NAFSSR 测试数据中  包含了   112对 Flickr1024 测试集 
+                               5 对 Middlebury 数据
+                               20 对 KITTI2012 数据
+                               20 对 KITTI2015 数据
+
+"""
+
+
+
+
 def parser_setting():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_dir", default="../../datasets", type=str)

@@ -10,6 +10,8 @@ import numpy as np
 
 注 这里只对flickr1024进行了处理 如果需要扩充数据集 可以添加对其他数据集进行类似处理
 
+!!!!! NAFSSR 训练数据中 包含了800对Flickr1024的训练数据 和 60 对 Middlebury 数据集 !!!!!
+
 """
 
 def parser_setting():
