@@ -52,7 +52,7 @@ def process_images(img_path_0, img_path_1, scale):
     img_hr_0 = np.array(img_hr_0)
     img_hr_1 = np.array(img_hr_1)
     img_lr_0 = np.array(img_lr_0)
-    img_lr_1 = np.array(img_hr_0)
+    img_lr_1 = np.array(img_lr_1)
 
     return img_hr_0, img_hr_1, img_lr_0, img_lr_1
 

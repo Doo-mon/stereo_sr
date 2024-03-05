@@ -84,29 +84,20 @@ class BaseModel():
         scheduler_type = train_opt['scheduler'].pop('type')
         if scheduler_type in ['MultiStepLR', 'MultiStepRestartLR']:
             for optimizer in self.optimizers:
-                self.schedulers.append(
-                    lr_scheduler.MultiStepRestartLR(optimizer,
-                                                    **train_opt['scheduler']))
+                self.schedulers.append(lr_scheduler.MultiStepRestartLR(optimizer, **train_opt['scheduler']))
         elif scheduler_type == 'CosineAnnealingRestartLR':
             for optimizer in self.optimizers:
-                self.schedulers.append(
-                    lr_scheduler.CosineAnnealingRestartLR(
-                        optimizer, **train_opt['scheduler']))
+                self.schedulers.append(lr_scheduler.CosineAnnealingRestartLR(optimizer, **train_opt['scheduler']))
         elif scheduler_type == 'TrueCosineAnnealingLR':
             print('..', 'cosineannealingLR')
             for optimizer in self.optimizers:
-                self.schedulers.append(
-                    torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, **train_opt['scheduler']))
+                self.schedulers.append(torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, **train_opt['scheduler']))
         elif scheduler_type == 'LinearLR':
             for optimizer in self.optimizers:
-                self.schedulers.append(
-                    lr_scheduler.LinearLR(
-                        optimizer, train_opt['total_iter']))
+                self.schedulers.append(lr_scheduler.LinearLR(optimizer, train_opt['total_iter']))
         elif scheduler_type == 'VibrateLR':
             for optimizer in self.optimizers:
-                self.schedulers.append(
-                    lr_scheduler.VibrateLR(
-                        optimizer, train_opt['total_iter']))
+                self.schedulers.append(lr_scheduler.VibrateLR(optimizer, train_opt['total_iter']))
         else:
             raise NotImplementedError(
                 f'Scheduler {scheduler_type} is not implemented yet.')
