@@ -178,7 +178,7 @@ def process_KITTI2015(data_dir, data_type, scale, output_dir):
         Image.fromarray(np.uint8(img_hr_1)).save(os.path.join(hr_img_dir, 'hr1.png'))
         Image.fromarray(np.uint8(img_lr_0)).save(os.path.join(lr_img_dir, 'lr0.png'))
         Image.fromarray(np.uint8(img_lr_1)).save(os.path.join(lr_img_dir, 'lr1.png'))
-        print(f'{i/2}--KITTI2012--{data_type} samples have been generated...')
+        print(f'{i/2}--KITTI2015--{data_type} samples have been generated...')
 
 
 def process_Middlebury(data_dir, data_type, scale, output_dir):
