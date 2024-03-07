@@ -57,11 +57,13 @@ network_g:
   up_scale: 4 # 要和上面的scale一致
 
   # 下面的设置决定了网络的结构和大小
-  width: 48
-  num_blks: 16
+  width: 48 # 通道数
+  num_blks: 16 # stereo块的个数
   drop_path_rate: 0
   train_size: [1, 6, 30, 90]
   drop_out_rate: 0.
+  normal_block: NAFBlock
+  fusion_block: SCAM
 
 
 # ===== 路径 ===== 

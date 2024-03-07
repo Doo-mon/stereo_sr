@@ -18,7 +18,7 @@ import numpy as np
 def parser_setting():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_dir", default="../../datasets", type=str)
-    parser.add_argument("--dataset_name", default="Flickr1024",choices=["Flickr1024","KITTI2012","KITTI2015","Middlebury2014","Middlebury2021"], type=str)
+    parser.add_argument("--dataset_name", default="Flickr1024",choices=["Flickr1024","KITTI2012","KITTI2015","Middlebury_test","Middlebury2021"], type=str)
     parser.add_argument("--data_type", default="Validation",choices=["Validation", "Test"], type=str)
     parser.add_argument("--scale", default=2, type=int) # 设置放缩尺寸
 
@@ -170,13 +170,11 @@ def process_KITTI2015(data_dir, data_type, scale, output_dir):
         print(f'{i}--KITTI2012--{data_type} samples have been generated...')
 
 
-def process_Middlebury2014(data_dir, data_type, scale, output_dir):
+def process_Middlebury(data_dir, data_type, scale, output_dir):
     if data_type == 'Validation':
         print("The Middlebury2014 dataset is not used for validation, only for testing.")
         data_type = 'Test'
     
-    data_dir = os.path.join(data_dir, 'data') # Middlebury2014/data
-
     all_items = os.listdir(data_dir)
     folders = [item for item in all_items if os.path.isdir(os.path.join(data_dir, item))]
 
@@ -207,7 +205,7 @@ def process_Middlebury2021(data_dir, data_type, scale, output_dir):
     if data_type == 'Validation':
         print("The Middlebury2021 dataset is not used for validation, only for testing.")
         data_type = 'Test'
-    # data_dir = os.path.join(data_dir, 'data') # Middlebury2014/data
+    data_dir = os.path.join(data_dir, 'data') # Middlebury2021/data
 
     all_items = os.listdir(data_dir)
     folders = [item for item in all_items if os.path.isdir(os.path.join(data_dir, item))]
@@ -261,8 +259,8 @@ def main():
         process_KITTI2012(data_dir = data_dir, data_type = args.data_type, scale = args.scale, output_dir = output_dir)
     elif args.dataset_name =="KITTI2015":
         process_KITTI2015(data_dir = data_dir, data_type = args.data_type, scale = args.scale, output_dir = output_dir)
-    elif args.dataset_name =="Middlebury2014":
-        process_Middlebury2014(data_dir = data_dir, data_type = args.data_type, scale = args.scale, output_dir = output_dir)
+    elif args.dataset_name =="Middlebury_test":
+        process_Middlebury(data_dir = data_dir, data_type = args.data_type, scale = args.scale, output_dir = output_dir)
     elif args.dataset_name =="Middlebury2021":
         process_Middlebury2021(data_dir = data_dir, data_type = args.data_type, scale = args.scale, output_dir = output_dir)
 

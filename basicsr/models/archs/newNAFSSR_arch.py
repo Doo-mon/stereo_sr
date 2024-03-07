@@ -3,28 +3,67 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from basicsr.models.archs.NAFNet_arch import LayerNorm2d, NAFBlock
+
 from basicsr.models.archs.arch_util import MySequential
 from basicsr.models.archs.local_arch import Local_Base
-
-from basicsr.models.archs.NAFSSR_arch import SCAM,DropPath, NAFBlockSR, NAFNetSR, NAFSSR
-
-
+from basicsr.models.archs.NAFNet_arch import LayerNorm2d, NAFBlock, SimpleGate
+from basicsr.models.archs.NAFSSR_arch import SCAM, DropPath
 
 
-class newNAFNetSR(nn.Module):
-    def __init__(self, up_scale=4, width=48, num_blks=16, img_channel=3, drop_path_rate=0., drop_out_rate=0., fusion_from=-1, fusion_to=-1, dual=False):
+
+class Fusion_Block(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        pass
+
+    def forward(self, x_l, x_r):
+        pass
+
+
+class Normal_Block(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        pass
+
+
+    def forward(self, x):
+        pass
+
+
+
+class Stereo_Block(nn.Module):
+    def __init__(self, channel, fusion=False, drop_out_rate=0., **kwargs):
+        super().__init__()
+        self.blk = Normal_Block(channel, drop_out_rate = drop_out_rate, **kwargs)
+        self.fusion = Fusion_Block(channel, **kwargs) if fusion else None # 用fusion来控制每个块后面是否跟着融合块
+
+    def forward(self, *feats): # 双目的情况下应该是 （x1,x2）
+        feats = tuple([self.blk(x) for x in feats])
+        if self.fusion:
+            feats = self.fusion(*feats)
+        return feats
+
+
+class StereoNet(nn.Module):
+    def __init__(self, up_scale=4, width=48, num_blks=16, img_channel=3, drop_path_rate=0., drop_out_rate=0., fusion_from=-1, fusion_to=-1, dual=False, **kwargs):
         super().__init__()
         self.dual = dual    # dual input for stereo SR (left view, right view)
         self.intro = nn.Conv2d(in_channels=img_channel, out_channels=width, kernel_size=3, padding=1, stride=1, groups=1, bias=True)
-        # 自定义序列 方便多输入
+        # 自定义序列类 可以处理双目的情况 # 注意 有两个不同的 dropout 值
         self.body = MySequential(
-            *[DropPath(drop_path_rate, NAFBlockSR(width, fusion=(fusion_from <= i and i <= fusion_to), drop_out_rate=drop_out_rate)) for i in range(num_blks)]
+            *[
+                DropPath(
+                    drop_rate = drop_path_rate, 
+                    module = Stereo_Block(width, fusion=(fusion_from <= i and i <= fusion_to), drop_out_rate=drop_out_rate, **kwargs),
+                       ) for i in range(num_blks)
+            ]
         )
-
+        # 上采样层
         self.up = nn.Sequential(
             nn.Conv2d(in_channels=width, out_channels=img_channel * up_scale**2, kernel_size=3, padding=1, stride=1, groups=1, bias=True),
-            nn.PixelShuffle(up_scale)
+            nn.PixelShuffle(up_scale) # 这个主要是是将通道维数据重新排列 进而扩大分辨率
         )
         self.up_scale = up_scale
 
@@ -43,10 +82,10 @@ class newNAFNetSR(nn.Module):
 
 
 
-class newNAFSSR(Local_Base, newNAFNetSR):
+class newNAFSSR(Local_Base, StereoNet):
     def __init__(self, *args, train_size=(1, 6, 30, 90), fast_imp=False, fusion_from=-1, fusion_to=1000, **kwargs):
         Local_Base.__init__(self)
-        newNAFNetSR.__init__(self, *args, img_channel=3, fusion_from=fusion_from, fusion_to=fusion_to, dual=True, **kwargs)
+        StereoNet.__init__(self, *args, img_channel=3, fusion_from=fusion_from, fusion_to=fusion_to, dual=True, **kwargs)
 
         # 这个部分是论文里面说解决训练验证不一致的情况
         N, C, H, W = train_size

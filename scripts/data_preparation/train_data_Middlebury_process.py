@@ -4,23 +4,19 @@ from PIL import Image
 import numpy as np
 
 """
-
-仿照 iPASSR 对Flickr1024数据集的 训练集图像 进行分patch处理 (并通过bicubic插值得到低分辨率图像)
-原matlab代码: https://github.com/YingqianWang/iPASSR/blob/main/data/train/GenerateTrainingPatches.m
-
-注 这里只对flickr1024进行了处理 如果需要扩充数据集 可以添加对其他数据集进行类似处理
-
-!!!!! NAFSSR 训练数据中 包含了800对Flickr1024的训练数据 和 60 对 Middlebury 数据集 !!!!!
+对 Middlebury 60对训练数据进行处理
+受到原始数据集的影响 这个脚本最好根据实际情况进行修改
 
 """
 
 def parser_setting():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_dir", default="../../datasets", type=str)
-    parser.add_argument("--dataset_name", default="Flickr1024", type=str)
+    parser.add_argument("--dataset_name", default="Middlebury", type=str)
     parser.add_argument("--data_type", default="Train", type=str)
 
     parser.add_argument("--scale", default=2, type=int) # 设置放缩尺寸
+    parser.add_argument("--patchid_start_from_0", default=False) # 设置patch id 是否从0开始
 
     parser.add_argument("--patch_width", default=90, type=int) # 横向长度
     parser.add_argument("--patch_height", default=30, type=int) # 纵向长度
@@ -58,25 +54,47 @@ def process_images(img_path_0, img_path_1, scale):
 
     return img_hr_0, img_hr_1, img_lr_0, img_lr_1
 
+
+
+
 def main():
     args = parser_setting()
-    data_dir = os.path.join(args.data_dir, args.dataset_name)
-    data_dir = os.path.join(data_dir, args.data_type)
-
+    data_dir_1 = os.path.join(args.data_dir, args.dataset_name + "_train_im0_im1")
+    data_dir_2 = os.path.join(args.data_dir, args.dataset_name + "_train_view1_view5")
     # 保存到训练数据文件夹
     output_dir = os.path.join(args.data_dir, 'train_data')
     if not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)
 
+    all_items_1 = os.listdir(data_dir_1)
+    folders_1 = [item for item in all_items_1 if os.path.isdir(os.path.join(data_dir_1, item))]
+
+    all_items_2 = os.listdir(data_dir_2)
+    folders_2 = [item for item in all_items_2 if os.path.isdir(os.path.join(data_dir_2, item))]
 
     imgs_list = []
-    img_extensions = ["png",]
-    for fname in os.listdir(data_dir):
-        if any(fname.endswith(ext) for ext in img_extensions):
-            imgs_list.append(os.path.join(data_dir, fname))
-    imgs_list = sorted(imgs_list)
+    
+    for folder in folders_1:
+        l_data_dir = os.path.join(data_dir_1, folder, 'im0.png')
+        r_data_dir = os.path.join(data_dir_1, folder, 'im1.png')
+        imgs_list.append(l_data_dir)
+        imgs_list.append(r_data_dir)
 
-    idx_patch = 0
+    for folder in folders_2:
+        l_data_dir = os.path.join(data_dir_2, folder, 'view1.png')
+        r_data_dir = os.path.join(data_dir_2, folder, 'view5.png')
+        imgs_list.append(l_data_dir)
+        imgs_list.append(r_data_dir)
+
+    imgs_list = sorted(imgs_list)
+    
+    if args.patchid_start_from_0:
+        idx_patch = 0
+
+    else:
+        all_items_2 = os.listdir(os.path.join(output_dir, f'patches_x{args.scale}'))
+        idx_patch = len(all_items_2)
+
     scale = args.scale
     patch_width = args.patch_width
     patch_height = args.patch_height 
