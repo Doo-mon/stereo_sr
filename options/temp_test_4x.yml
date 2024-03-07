@@ -27,8 +27,8 @@ datasets:
   test2:
     name: Middlebury
     type: PairedStereoImageDataset
-    dataroot_gt: ~/stereo_sr/datasets/test_data/Middlebury/hr
-    dataroot_lq: ~/stereo_sr/datasets/test_data/Middlebury/lr_x4
+    dataroot_gt: ~/stereo_sr/datasets/test_data/Middlebury_test/hr
+    dataroot_lq: ~/stereo_sr/datasets/test_data/Middlebury_test/lr_x4
     io_backend:
       type: disk
   

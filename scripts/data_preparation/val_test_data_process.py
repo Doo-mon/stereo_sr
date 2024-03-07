@@ -2,7 +2,7 @@ import os
 import argparse
 from PIL import Image
 import numpy as np
-
+import random
 
 """
     NAFSSR 测试数据中  包含了   112对 Flickr1024 测试集 
@@ -13,6 +13,7 @@ import numpy as np
 """
 
 
+    
 
 
 def parser_setting():
@@ -103,7 +104,12 @@ def process_KITTI2012(data_dir, data_type, scale, output_dir):
     hr_dir = os.path.join(output_dir, 'hr')
     lr_dir = os.path.join(output_dir, f'lr_x{scale}')
 
-    for i in range(0, len(l_imgs_list), 2):
+    # 创建一个列表，包含0到389之间的所有偶数
+    even_numbers = [i for i in range(len(l_imgs_list)) if i % 2 == 0]
+    # 随机选择20个不同的偶数
+    selected_numbers = random.sample(even_numbers, 20)
+
+    for i in selected_numbers:
         img_hr_0, img_lr_0 = get_lr_image_by_bicubic(l_imgs_list[i], scale = scale)
         img_hr_1, img_lr_1 = get_lr_image_by_bicubic(r_imgs_list[i], scale = scale)
 
@@ -120,7 +126,7 @@ def process_KITTI2012(data_dir, data_type, scale, output_dir):
         Image.fromarray(np.uint8(img_hr_1)).save(os.path.join(hr_img_dir, 'hr1.png'))
         Image.fromarray(np.uint8(img_lr_0)).save(os.path.join(lr_img_dir, 'lr0.png'))
         Image.fromarray(np.uint8(img_lr_1)).save(os.path.join(lr_img_dir, 'lr1.png'))
-        print(f'{i}--KITTI2012--{data_type} samples have been generated...')
+        print(f'{i/2}--KITTI2012--{data_type} samples have been generated...')
 
 
 def process_KITTI2015(data_dir, data_type, scale, output_dir):
@@ -150,7 +156,12 @@ def process_KITTI2015(data_dir, data_type, scale, output_dir):
     hr_dir = os.path.join(output_dir, 'hr')
     lr_dir = os.path.join(output_dir, f'lr_x{scale}')
 
-    for i in range(0, len(l_imgs_list), 2):
+    # 创建一个列表，包含0到389之间的所有偶数
+    even_numbers = [i for i in range(len(l_imgs_list)) if i % 2 == 0]
+    # 随机选择20个不同的偶数
+    selected_numbers = random.sample(even_numbers, 20)
+
+    for i in selected_numbers:
         img_hr_0, img_lr_0 = get_lr_image_by_bicubic(l_imgs_list[i], scale = scale)
         img_hr_1, img_lr_1 = get_lr_image_by_bicubic(r_imgs_list[i], scale = scale)
 
@@ -167,7 +178,7 @@ def process_KITTI2015(data_dir, data_type, scale, output_dir):
         Image.fromarray(np.uint8(img_hr_1)).save(os.path.join(hr_img_dir, 'hr1.png'))
         Image.fromarray(np.uint8(img_lr_0)).save(os.path.join(lr_img_dir, 'lr0.png'))
         Image.fromarray(np.uint8(img_lr_1)).save(os.path.join(lr_img_dir, 'lr1.png'))
-        print(f'{i}--KITTI2012--{data_type} samples have been generated...')
+        print(f'{i/2}--KITTI2012--{data_type} samples have been generated...')
 
 
 def process_Middlebury(data_dir, data_type, scale, output_dir):
@@ -198,7 +209,7 @@ def process_Middlebury(data_dir, data_type, scale, output_dir):
         Image.fromarray(np.uint8(img_hr_1)).save(os.path.join(hr_img_dir, 'hr1.png'))
         Image.fromarray(np.uint8(img_lr_0)).save(os.path.join(lr_img_dir, 'lr0.png'))
         Image.fromarray(np.uint8(img_lr_1)).save(os.path.join(lr_img_dir, 'lr1.png'))
-        print(f'{i}--Middlebury2014--{data_type} samples have been generated...')
+        print(f'{folder}--Middlebury2014--{data_type} samples have been generated...')
  
 
 def process_Middlebury2021(data_dir, data_type, scale, output_dir):
