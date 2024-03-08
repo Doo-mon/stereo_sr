@@ -238,7 +238,7 @@ def process_Middlebury2021(data_dir, data_type, scale, output_dir):
         Image.fromarray(np.uint8(img_hr_1)).save(os.path.join(hr_img_dir, 'hr1.png'))
         Image.fromarray(np.uint8(img_lr_0)).save(os.path.join(lr_img_dir, 'lr0.png'))
         Image.fromarray(np.uint8(img_lr_1)).save(os.path.join(lr_img_dir, 'lr1.png'))
-        print(f'{i}--Middlebury2014--{data_type} samples have been generated...')
+        print(f'{folder}--Middlebury2021--{data_type} samples have been generated...')
 
 
 def main():
