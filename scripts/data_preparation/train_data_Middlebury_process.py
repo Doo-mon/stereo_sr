@@ -16,6 +16,7 @@ def parser_setting():
 
     parser.add_argument("--scale", default=2, type=int) # 设置放缩尺寸
     parser.add_argument("--patchid_start_from_0", default=-1, type=int) # 设置patch id 是否从0开始
+    parser.add_argument("--file_num", default=4, type=int) # 横向长度
 
     parser.add_argument("--patch_width", default=90, type=int) # 横向长度
     parser.add_argument("--patch_height", default=30, type=int) # 纵向长度
@@ -116,7 +117,7 @@ def main():
                 lr_patch_0 = img_lr_0[x_lr - 1:x_lr + patch_height - 1, y_lr - 1:y_lr + patch_width - 1, :]
                 lr_patch_1 = img_lr_1[x_lr - 1:x_lr + patch_height - 1, y_lr - 1:y_lr + patch_width - 1, :]
 
-                patch_dir = os.path.join(output_dir, f'patches_x{scale}_2/{idx_patch:06d}')
+                patch_dir = os.path.join(output_dir, f'patches_x{scale}_{args.file_num}/{idx_patch:06d}')
                 os.makedirs(patch_dir, exist_ok=True)
                 Image.fromarray(np.uint8(hr_patch_0)).save(f'{patch_dir}/hr0.png')
                 Image.fromarray(np.uint8(hr_patch_1)).save(f'{patch_dir}/hr1.png')

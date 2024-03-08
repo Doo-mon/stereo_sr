@@ -89,6 +89,9 @@ def main():
     patch_height = args.patch_height 
     patch_stride = args.patch_stride
 
+    
+
+
     for i in range(0, len(imgs_list), 2):
         img_hr_0, img_hr_1, img_lr_0, img_lr_1 = process_images(imgs_list[i], imgs_list[i+1], scale = scale)
         
@@ -105,11 +108,8 @@ def main():
                 hr_patch_1 = img_hr_1[x_hr - 1:(x_lr + patch_height - 1) * scale, y_hr - 1:(y_lr + patch_width - 1) * scale, :]
                 lr_patch_0 = img_lr_0[x_lr - 1:x_lr + patch_height - 1, y_lr - 1:y_lr + patch_width - 1, :]
                 lr_patch_1 = img_lr_1[x_lr - 1:x_lr + patch_height - 1, y_lr - 1:y_lr + patch_width - 1, :]
-
-                if idx_patch >50000:
-                    patch_dir = os.path.join(output_dir, f'patches_x{scale}_2/{idx_patch:06d}')
-                else:
-                    patch_dir = os.path.join(output_dir, f'patches_x{scale}/{idx_patch:06d}')
+                
+                patch_dir = os.path.join(output_dir, f'patches_x{scale}_{int(idx_patch/50000)}/{idx_patch:06d}')
                 os.makedirs(patch_dir, exist_ok=True)
                 Image.fromarray(np.uint8(hr_patch_0)).save(f'{patch_dir}/hr0.png')
                 Image.fromarray(np.uint8(hr_patch_1)).save(f'{patch_dir}/hr1.png')
