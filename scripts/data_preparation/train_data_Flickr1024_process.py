@@ -21,7 +21,7 @@ def parser_setting():
     parser.add_argument("--data_type", default="Train", type=str)
 
     parser.add_argument("--scale", default=2, type=int) # 设置放缩尺寸
-    parser.add_argument("--patchid_start_from_0", default=True) # 设置patch id 是否从0开始
+    parser.add_argument("--patchid_start_from_0", default=-1, type=int) # 设置patch id 是否从0开始
 
     parser.add_argument("--patch_width", default=90, type=int) # 横向长度
     parser.add_argument("--patch_height", default=30, type=int) # 纵向长度
@@ -77,8 +77,8 @@ def main():
             imgs_list.append(os.path.join(data_dir, fname))
     imgs_list = sorted(imgs_list)
 
-    if args.patchid_start_from_0:
-        idx_patch = 0
+    if args.patchid_start_from_0 >= 0:
+        idx_patch = args.patchid_start_from_0
 
     else:
         all_items = os.listdir(os.path.join(output_dir, f'patches_x{args.scale}'))

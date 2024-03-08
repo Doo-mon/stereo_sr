@@ -5,8 +5,8 @@ cd "$(dirname "$0")"
 echo " ===========================  Processing Flickr1024 dataset... ===========================  "
 
 # 训练集处理
-python train_data_Flickr1024_process.py --dataset_name Flickr1024 --scale 2 --patchid_start_from_0 True
-python train_data_Flickr1024_process.py --dataset_name Flickr1024 --scale 4 --patchid_start_from_0 True
+python train_data_Flickr1024_process.py --dataset_name Flickr1024 --scale 2 --patchid_start_from_0 0
+python train_data_Flickr1024_process.py --dataset_name Flickr1024 --scale 4 --patchid_start_from_0 0
 
 
 # 验证集处理
@@ -23,8 +23,8 @@ echo " ===========================  Processing Middlebury dataset... ===========
 
 
 # 60 个训练集处理
-python train_data_Middlebury_process.py --dataset_name Middlebury --scale 2 --patchid_start_from_0 False
-python train_data_Middlebury_process.py --dataset_name Middlebury --scale 4 --patchid_start_from_0 False
+python train_data_Middlebury_process.py --dataset_name Middlebury --scale 2 --patchid_start_from_0 -1
+python train_data_Middlebury_process.py --dataset_name Middlebury --scale 4 --patchid_start_from_0 -1
 
 # 5个测试集处理
 python val_test_data_process.py --dataset_name Middlebury_test --data_type Test --scale 2
