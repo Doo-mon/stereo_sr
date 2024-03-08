@@ -6,7 +6,6 @@ import numpy as np
 """
 对 Middlebury 60对训练数据进行处理
 受到原始数据集的影响 这个脚本最好根据实际情况进行修改
-
 """
 
 def parser_setting():
@@ -93,7 +92,7 @@ def main():
 
     else:
         all_items = os.listdir(os.path.join(output_dir, f'patches_x{args.scale}'))
-        idx_patch = len(all_items)
+        idx_patch = len(all_items) + 50000
 
     scale = args.scale
     patch_width = args.patch_width
@@ -117,7 +116,7 @@ def main():
                 lr_patch_0 = img_lr_0[x_lr - 1:x_lr + patch_height - 1, y_lr - 1:y_lr + patch_width - 1, :]
                 lr_patch_1 = img_lr_1[x_lr - 1:x_lr + patch_height - 1, y_lr - 1:y_lr + patch_width - 1, :]
 
-                patch_dir = os.path.join(output_dir, f'patches_x{scale}/{idx_patch:06d}')
+                patch_dir = os.path.join(output_dir, f'patches_x{scale}_2/{idx_patch:06d}')
                 os.makedirs(patch_dir, exist_ok=True)
                 Image.fromarray(np.uint8(hr_patch_0)).save(f'{patch_dir}/hr0.png')
                 Image.fromarray(np.uint8(hr_patch_1)).save(f'{patch_dir}/hr1.png')

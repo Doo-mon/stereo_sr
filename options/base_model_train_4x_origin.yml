@@ -18,14 +18,10 @@ manual_seed: 10 # 训练种子
 datasets:
   train:
     name: Flickr1024-ssr-train
-    type: PairedStereoImageDatasetNew  # 这个new主要就new在 它能够读两个文件夹的数据
-
-    # 有两个路径 
+    type: PairedStereoImageDataset # 在 data 文件夹下面被定义才有效
+    # 训练数据gt和lq图是放在一起的 
     dataroot_gt: ~/stereo_sr/datasets/train_data/patches_x4/
     dataroot_lq: ~/stereo_sr/datasets/train_data/patches_x4/
-    dataroot_lq2: ~/stereo_sr/datasets/train_data/patches_x4_2/
-    dataroot_gt2: ~/stereo_sr/datasets/train_data/patches_x4_2/
-
     io_backend: # 数据保存在磁盘上
       type: disk
 
