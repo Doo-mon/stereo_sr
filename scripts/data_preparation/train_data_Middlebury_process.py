@@ -92,8 +92,8 @@ def main():
         idx_patch = 0
 
     else:
-        all_items_2 = os.listdir(os.path.join(output_dir, f'patches_x{args.scale}'))
-        idx_patch = len(all_items_2)
+        all_items = os.listdir(os.path.join(output_dir, f'patches_x{args.scale}'))
+        idx_patch = len(all_items)
 
     scale = args.scale
     patch_width = args.patch_width

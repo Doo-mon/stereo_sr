@@ -13,9 +13,6 @@ import random
 """
 
 
-    
-
-
 def parser_setting():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_dir", default="../../datasets", type=str)
