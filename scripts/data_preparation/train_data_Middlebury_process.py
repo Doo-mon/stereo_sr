@@ -92,7 +92,7 @@ def main():
         idx_patch = args.patchid_start_from_0
 
     else:
-        all_items = os.listdir(os.path.join(output_dir, f'patches_x{args.scale}'))
+        all_items = os.listdir(os.path.join(output_dir, f'patches_x{args.scale}_'))
         idx_patch = len(all_items) + 50000
 
     scale = args.scale
