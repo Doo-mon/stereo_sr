@@ -2,6 +2,7 @@ import os
 import argparse
 from PIL import Image
 import numpy as np
+from tqdm import tqdm
 
 """
 对 Middlebury 60对训练数据进行处理
@@ -16,7 +17,7 @@ def parser_setting():
 
     parser.add_argument("--scale", default=2, type=int) # 设置放缩尺寸
     parser.add_argument("--patchid_start_from_0", default=-1, type=int) # 设置patch id 是否从0开始
-    parser.add_argument("--file_num", default=4, type=int) # 横向长度
+    parser.add_argument("--start_file_num", default=5, type=int) # 设置保存的文件夹
 
     parser.add_argument("--patch_width", default=90, type=int) # 横向长度
     parser.add_argument("--patch_height", default=30, type=int) # 纵向长度
@@ -27,7 +28,6 @@ def parser_setting():
     parser.add_argument("--patch_start_width", default=3, type=int)
     
     return parser.parse_args()
-
 
 # 裁剪图片 使其能够被放缩因子整除
 def modcrop(image, scale):
@@ -53,8 +53,6 @@ def process_images(img_path_0, img_path_1, scale):
     img_lr_1 = np.array(img_lr_1)
 
     return img_hr_0, img_hr_1, img_lr_0, img_lr_1
-
-
 
 
 def main():
@@ -87,20 +85,25 @@ def main():
         imgs_list.append(r_data_dir)
 
     imgs_list = sorted(imgs_list)
-    
-    if args.patchid_start_from_0 >= 0:
+    # 设置保存的patch id
+    if args.patchid_start_from_0 >= 0: # 手动设置
         idx_patch = args.patchid_start_from_0
 
     else:
-        all_items = os.listdir(os.path.join(output_dir, f'patches_x{args.scale}_'))
-        idx_patch = len(all_items) + 50000
+        temp_dir = os.path.join(output_dir, f'patches_x{args.scale}_{args.start_file_num}')
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir, exist_ok=True)
+        all_items = os.listdir(temp_dir)
+        idx_patch = len(all_items) + 50000 * args.start_file_num
 
     scale = args.scale
     patch_width = args.patch_width
     patch_height = args.patch_height 
     patch_stride = args.patch_stride
 
-    for i in range(0, len(imgs_list), 2):
+    start_id = idx_patch
+    print(f"Generating Middlebury train data x{args.scale} ...")
+    for i in tqdm(range(0, len(imgs_list), 2)):
         img_hr_0, img_hr_1, img_lr_0, img_lr_1 = process_images(imgs_list[i], imgs_list[i+1], scale = scale)
         
         # 以步数 patch_stride 取出lr对应的小块图像 每块都是 patch_height x patch_width
@@ -117,14 +120,16 @@ def main():
                 lr_patch_0 = img_lr_0[x_lr - 1:x_lr + patch_height - 1, y_lr - 1:y_lr + patch_width - 1, :]
                 lr_patch_1 = img_lr_1[x_lr - 1:x_lr + patch_height - 1, y_lr - 1:y_lr + patch_width - 1, :]
 
-                patch_dir = os.path.join(output_dir, f'patches_x{scale}_{args.file_num}/{idx_patch:06d}')
+                patch_dir = os.path.join(output_dir, f'patches_x{scale}_{int(idx_patch/50000)}/{idx_patch:06d}')
                 os.makedirs(patch_dir, exist_ok=True)
                 Image.fromarray(np.uint8(hr_patch_0)).save(f'{patch_dir}/hr0.png')
                 Image.fromarray(np.uint8(hr_patch_1)).save(f'{patch_dir}/hr1.png')
                 Image.fromarray(np.uint8(lr_patch_0)).save(f'{patch_dir}/lr0.png')
                 Image.fromarray(np.uint8(lr_patch_1)).save(f'{patch_dir}/lr1.png')
-                print(f'{idx_patch:06d} training samples have been generated...')
+                # print(f'{idx_patch:06d} training samples have been generated...')
                 idx_patch += 1
+    print(f"finished ... from id-{start_id} to id-{idx_patch}")
+
 
 if __name__=="__main__":
     main()

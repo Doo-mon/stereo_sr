@@ -2,6 +2,7 @@ import os
 import argparse
 from PIL import Image
 import numpy as np
+from tqdm import tqdm
 
 """
 
@@ -22,17 +23,17 @@ def parser_setting():
 
     parser.add_argument("--scale", default=2, type=int) # 设置放缩尺寸
     parser.add_argument("--patchid_start_from_0", default=-1, type=int) # 设置patch id 是否从0开始
+    parser.add_argument("--start_file_num", default=0, type=int) # 设置保存的文件夹 默认从0开始
 
+    # 设置patch的大小和步长
     parser.add_argument("--patch_width", default=90, type=int) # 横向长度
     parser.add_argument("--patch_height", default=30, type=int) # 纵向长度
     parser.add_argument("--patch_stride", default=20, type=int) # 取patch的步长
-
     # 开始取patch的点 这个会忽视掉图片左边和上边的一小部分
     parser.add_argument("--patch_start_height", default=3, type=int) 
     parser.add_argument("--patch_start_width", default=3, type=int)
     
     return parser.parse_args()
-
 
 # 裁剪图片 使其能够被放缩因子整除
 def modcrop(image, scale):
@@ -59,17 +60,18 @@ def process_images(img_path_0, img_path_1, scale):
 
     return img_hr_0, img_hr_1, img_lr_0, img_lr_1
 
+
 def main():
     args = parser_setting()
-    data_dir = os.path.join(args.data_dir, args.dataset_name)
-    data_dir = os.path.join(data_dir, args.data_type)
+    data_dir = os.path.join(args.data_dir, args.dataset_name) # data_dir = ../../datasets/Flickr1024
+    data_dir = os.path.join(data_dir, args.data_type) # data_dir = ../../datasets/Flickr1024/Train
 
-    # 保存到训练数据文件夹
-    output_dir = os.path.join(args.data_dir, 'train_data')
+    # 输出保存路径
+    output_dir = os.path.join(args.data_dir, 'train_data') # output_dir = ../../datasets/train_data
     if not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)
 
-
+    # 获取图片路径列表
     imgs_list = []
     img_extensions = ["png",]
     for fname in os.listdir(data_dir):
@@ -77,22 +79,25 @@ def main():
             imgs_list.append(os.path.join(data_dir, fname))
     imgs_list = sorted(imgs_list)
 
-    if args.patchid_start_from_0 >= 0:
+    # 设置保存的patch id
+    if args.patchid_start_from_0 >= 0: # 手动设置
         idx_patch = args.patchid_start_from_0
 
-    else:
-        all_items = os.listdir(os.path.join(output_dir, f'patches_x{args.scale}'))
-        idx_patch = len(all_items)
+    else: # 自动设置
+        temp_dir = os.path.join(output_dir, f'patches_x{args.scale}_{args.start_file_num}')
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir, exist_ok=True)
+        all_items = os.listdir(temp_dir) 
+        idx_patch = len(all_items) + 50000 * args.start_file_num
 
     scale = args.scale
     patch_width = args.patch_width
     patch_height = args.patch_height 
     patch_stride = args.patch_stride
 
-    
-
-
-    for i in range(0, len(imgs_list), 2):
+    start_id = idx_patch
+    print(f"Generating Flickr1024 train data x{args.scale} ...")
+    for i in tqdm(range(0, len(imgs_list), 2)):
         img_hr_0, img_hr_1, img_lr_0, img_lr_1 = process_images(imgs_list[i], imgs_list[i+1], scale = scale)
         
         # 以步数 patch_stride 取出lr对应的小块图像 每块都是 patch_height x patch_width
@@ -115,8 +120,10 @@ def main():
                 Image.fromarray(np.uint8(hr_patch_1)).save(f'{patch_dir}/hr1.png')
                 Image.fromarray(np.uint8(lr_patch_0)).save(f'{patch_dir}/lr0.png')
                 Image.fromarray(np.uint8(lr_patch_1)).save(f'{patch_dir}/lr1.png')
-                print(f'{idx_patch:06d} training samples have been generated...')
+                # print(f'{idx_patch:06d} training samples have been generated...')
                 idx_patch += 1
+    print(f"finished ... from id-{start_id} to id-{idx_patch}")
+
 
 if __name__=="__main__":
     main()
