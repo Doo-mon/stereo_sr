@@ -14,6 +14,7 @@ from basicsr.data.transforms import augment, paired_random_crop, paired_random_c
 from basicsr.utils import FileClient, imfrombytes, img2tensor, padding
 import os
 import numpy as np
+from pathlib import Path
 
 class PairedImageSRLRDataset(data.Dataset):
     """Paired image dataset for image restoration.
@@ -297,55 +298,68 @@ class PairedStereoImageDataset(data.Dataset):
         return self.nums
     
 
-# 因为文件系统的问题 无法直接使用PairedStereoImageDataset
+# 因为文件系统的问题 无法直接使用PairedStereoImageDataset （即数据集被分到了多个文件目录下）
 class PairedStereoImageDatasetNew(data.Dataset):
  
     def __init__(self, opt):
-        super(PairedStereoImageDataset, self).__init__()
+        super(PairedStereoImageDatasetNew, self).__init__()
         self.opt = opt
         self.file_client = None
         self.io_backend_opt = opt['io_backend']
         self.mean = opt['mean'] if 'mean' in opt else None
         self.std = opt['std'] if 'std' in opt else None
 
+        # 这个经过预处理后变为了绝对路径 （末尾带有/）
         self.gt_folder, self.lq_folder = opt['dataroot_gt'], opt['dataroot_lq']
-        self.gt_folder2, self.lq_folder2 = opt['dataroot_gt2'], opt['dataroot_lq2']
+        # 文件夹数量
+        self.file_num = opt['file_num']
+        
+        
+        gt_folder_path = Path(self.gt_folder) # 这个经过Path处理后 没有/了
+        self.gt_folder_parent = gt_folder_path.parent # 上级所有的目录
+        self.gt_folder_name = gt_folder_path.name  # patches_x4_0
+        self.gt_folders = []
+        for i in range(int(self.file_num)):
+            self.gt_folders.append(os.path.join(self.gt_folder_parent, self.gt_folder_name[:-1] + str(i)))
+
+        lq_folder_path = Path(self.lq_folder)
+        self.lq_folder_parent = lq_folder_path.parent
+        self.lq_folder_name = lq_folder_path.name
+        self.lq_folders = []
+        for i in range(int(self.file_num)):
+            self.lq_folders.append(os.path.join(self.lq_folder_parent, self.lq_folder_name[:-1] + str(i)))
+            
         if 'filename_tmpl' in opt:
             self.filename_tmpl = opt['filename_tmpl']
         else:
             self.filename_tmpl = '{}'
 
         assert self.io_backend_opt['type'] == 'disk'
-        import os
-        self.lq_files = os.listdir(self.lq_folder)
-        self.gt_files = os.listdir(self.gt_folder)
 
-        self.lq_files2 = os.listdir(self.lq_folder2)
-        self.gt_files2 = os.listdir(self.gt_folder2)
 
-        self.len_1 = len(self.gt_files)
-        self.len_2 = len(self.gt_files2)
-
-        self.nums = len(self.gt_files) + len(self.gt_files2)
+        # 这个是计算总共有多少个数据集文件
+        self.nums = 0
+        for folder in self.gt_folders:
+            self.nums += len(os.listdir(folder))
 
     def __getitem__(self, index):
         if self.file_client is None:
-            self.file_client = FileClient(
-                self.io_backend_opt.pop('type'), **self.io_backend_opt)
+            self.file_client = FileClient(self.io_backend_opt.pop('type'), **self.io_backend_opt)
+        
+        folder_index = int(index / 50000) # 0 1 2 3 
+        file_index = index - folder_index * 50000
 
-        lq_path = None
-        gt_path = None
+        self.gt_folder = self.gt_folders[folder_index]
+        self.lq_folder = self.lq_folders[folder_index]
 
-        if index < self.len_1:
-            gt_path_L = os.path.join(self.gt_folder, self.gt_files[index], 'hr0.png')
-            gt_path_R = os.path.join(self.gt_folder, self.gt_files[index], 'hr1.png')
-            gt_path = os.path.join(self.gt_folder, self.gt_files[index])
-        else:
-            index = index - self.len_1
-            gt_path_L = os.path.join(self.gt_folder2, self.gt_files2[index], 'hr0.png')
-            gt_path_R = os.path.join(self.gt_folder2, self.gt_files2[index], 'hr1.png')
-            gt_path = os.path.join(self.gt_folder2, self.gt_files2[index])
+        self.gt_files = os.listdir(self.gt_folder)
+        self.lq_files = os.listdir(self.lq_folder)
 
+        gt_path_L = os.path.join(self.gt_folder, self.gt_files[file_index], 'hr0.png')
+        gt_path_R = os.path.join(self.gt_folder, self.gt_files[file_index], 'hr1.png')
+        gt_path = os.path.join(self.gt_folder, self.gt_files[file_index])
+
+        # 读取gt图片
         img_bytes = self.file_client.get(gt_path_L, 'gt')
         try:
             img_gt_L = imfrombytes(img_bytes, float32=True)
@@ -358,16 +372,11 @@ class PairedStereoImageDatasetNew(data.Dataset):
         except:
             raise Exception("gt path {} not working".format(gt_path_R))
 
-        if index < self.len_1:
-            lq_path_L = os.path.join(self.lq_folder, self.lq_files[index], 'lr0.png')
-            lq_path_R = os.path.join(self.lq_folder, self.lq_files[index], 'lr1.png')
-            lq_path = os.path.join(self.lq_folder, self.lq_files[index])
-        else:
-            index = index - self.len_1
-            lq_path_L = os.path.join(self.lq_folder2, self.lq_files2[index], 'lr0.png')
-            lq_path_R = os.path.join(self.lq_folder2, self.lq_files2[index], 'lr1.png')
-            lq_path = os.path.join(self.lq_folder2, self.lq_files2[index])
+        lq_path_L = os.path.join(self.lq_folder, self.lq_files[file_index], 'lr0.png')
+        lq_path_R = os.path.join(self.lq_folder, self.lq_files[file_index], 'lr1.png')
+        lq_path = os.path.join(self.lq_folder, self.lq_files[file_index])
 
+        # 读取lq图片
         img_bytes = self.file_client.get(lq_path_L, 'lq')
         try:
             img_lq_L = imfrombytes(img_bytes, float32=True)

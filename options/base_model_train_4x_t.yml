@@ -18,13 +18,12 @@ manual_seed: 10 # 训练种子
 datasets:
   train:
     name: Flickr1024-ssr-train
-    type: PairedStereoImageDatasetNew  # 这个new主要就new在 它能够读两个文件夹的数据
+    type: PairedStereoImageDatasetNew  # 这个new主要就new在 它能够读多个个文件夹的数据
 
-    # 有两个路径 
-    dataroot_gt: ~/stereo_sr/datasets/train_data/patches_x4/
-    dataroot_lq: ~/stereo_sr/datasets/train_data/patches_x4/
-    dataroot_lq2: ~/stereo_sr/datasets/train_data/patches_x4_2/
-    dataroot_gt2: ~/stereo_sr/datasets/train_data/patches_x4_2/
+    # 有多个路径 
+    dataroot_gt: ~/stereo_sr/datasets/train_data/patches_x4_0/
+    dataroot_lq: ~/stereo_sr/datasets/train_data/patches_x4_0/
+    file_num: 2
 
     io_backend: # 数据保存在磁盘上
       type: disk
@@ -34,6 +33,8 @@ datasets:
     gt_size_w: 360
 
     # 数据增强的方式
+    # mean:
+    # std:
     use_hflip: true
     use_vflip: true
     use_rot: false
