@@ -73,7 +73,7 @@ def process_Flickr1024(data_dir, data_type, scale, output_dir):
         Image.fromarray(np.uint8(img_lr_1)).save(os.path.join(lr_img_dir, 'lr1.png'))
         print(f'{i}--Flickr1024--{data_type} samples have been generated...')
 
-
+# 
 def process_KITTI2012(data_dir, data_type, scale, output_dir, choice_n = 20):
     if data_type == 'Validation':
         print("The KITTI2012 dataset is not used for validation, only for testing.")
@@ -137,7 +137,7 @@ def process_KITTI2012(data_dir, data_type, scale, output_dir, choice_n = 20):
         print(f'{i/2}--KITTI2012--{data_type} samples have been generated...')
 
 
-def process_KITTI2015(data_dir, data_type, scale, output_dir):
+def process_KITTI2015(data_dir, data_type, scale, output_dir, choice_n = 20):
     if data_type == 'Validation':
         print("The KITTI2015 dataset is not used for validation, only for testing.")
         data_type = 'Test'
@@ -168,7 +168,7 @@ def process_KITTI2015(data_dir, data_type, scale, output_dir):
     # 创建一个列表，包含0到len之间的所有偶数
     even_numbers = [i for i in range(len(l_imgs_list)) if i % 2 == 0]
     # 随机选择20个不同的偶数
-    selected_numbers = random.sample(even_numbers, 20)
+    selected_numbers = random.sample(even_numbers, choice_n)
 
     for i in selected_numbers:
         # 能被4整除的一定能被2整除
