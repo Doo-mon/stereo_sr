@@ -83,14 +83,16 @@ def narrow_setup_multi_gpu(command, interval = 2, total_gpu = 8, need_gpu = 8):
         i = i % 5
         for n in range(total_gpu): # 循环获取所有gpu的信息再进行判断
             gpu_power, gpu_memory = gpu_info(gpu_index = n)
-            if gpu_memory < 1000 and gpu_power < 20 and mark_list[n] == 0 : # 如果找到符合的就放进去        
-                selected_gpu.append(n)
-                mark_list[n] = 1
-                count += 1
-            elif mark_list[n] == 1:  # 不符合 => 重新检查存储表 这个时候一般代表卡又被占了
-                selected_gpu.remove(n)
-                mark_list[n] = 0
-                count -= 1
+            if gpu_memory < 1000 and gpu_power < 20:
+                if mark_list[n] == 0:
+                    selected_gpu.append(n)
+                    mark_list[n] = 1
+                    count += 1    
+            else:
+                if mark_list[n] == 1:  # 不符合 => 重新检查存储表 这个时候一般代表卡又被占了
+                    selected_gpu.remove(n)
+                    mark_list[n] = 0
+                    count -= 1
             symbol = 'monitoring: ' + 'GPU :'+ str(n) +' >' * i + ' ' * (10 - i - 1) + '|'
             gpu_power_str = 'gpu power:%d W |' % gpu_power
             gpu_memory_str = 'gpu memory:%d MiB |' % gpu_memory
