@@ -74,7 +74,133 @@ def process_Flickr1024(data_dir, data_type, scale, output_dir):
         print(f'{i}--Flickr1024--{data_type} samples have been generated...')
 
 
-def process_KITTI2012(data_dir, data_type, scale, output_dir):
+def process_KITTI2012(data_dir, data_type, scale, output_dir, choice_n = 20):
+    if data_type == 'Validation':
+        print("The KITTI2012 dataset is not used for validation, only for testing.")
+        data_type = 'Test'
+
+    data_dir = os.path.join(data_dir, 'testing') # KITTI2012/testing
+
+    img_extensions = ["png",]
+
+    l_data_dir = os.path.join(data_dir, 'colored_0') # 左图
+    r_data_dir = os.path.join(data_dir, 'colored_1') # 右图
+    l_imgs_list = [] 
+    for fname in os.listdir(l_data_dir):
+        if any(fname.endswith(ext) for ext in img_extensions):
+            l_imgs_list.append(os.path.join(l_data_dir, fname))
+    l_imgs_list = sorted(l_imgs_list)
+
+    r_imgs_list = []
+    for fname in os.listdir(r_data_dir):
+        if any(fname.endswith(ext) for ext in img_extensions):
+            r_imgs_list.append(os.path.join(r_data_dir, fname))
+    r_imgs_list = sorted(r_imgs_list)
+
+
+    hr_dir = os.path.join(output_dir, 'hr')
+    lr_dir_x2 = os.path.join(output_dir, 'lr_x2')
+    lr_dir_x4 = os.path.joint(output_dir,'lr_x4')
+
+    # 创建一个列表，包含0到len之间的所有偶数
+    even_numbers = [i for i in range(len(l_imgs_list)) if i % 2 == 0]
+    # 随机选择20个不同的偶数
+    selected_numbers = random.sample(even_numbers, choice_n)
+
+    for i in selected_numbers:
+        # 能被4整除的一定能被2整除
+        img_hr_0_x2, img_lr_0_x2 = get_lr_image_by_bicubic(l_imgs_list[i], scale = 2)
+        img_hr_1_x2, img_lr_1_x2 = get_lr_image_by_bicubic(r_imgs_list[i], scale = 2)
+
+        img_hr_0_x4, img_lr_0_x4 = get_lr_image_by_bicubic(l_imgs_list[i], scale = 4)
+        img_hr_1_x4, img_lr_1_x4 = get_lr_image_by_bicubic(r_imgs_list[i], scale = 4)
+
+        img_name = os.path.basename(l_imgs_list[i])
+        img_name = os.path.splitext(img_name)[0] # 000000_10
+        img_name = img_name.split('_')[0] # 000000
+
+        hr_img_dir = os.path.join(hr_dir, f'{img_name}')
+        lr_img_dir_x4 = os.path.join(lr_dir_x4, f'{img_name}')
+        lr_img_dir_x2 = os.path.join(lr_dir_x2, f'{img_name}')
+        os.makedirs(hr_img_dir, exist_ok=True)
+        os.makedirs(lr_img_dir_x4, exist_ok=True)
+        os.makedirs(lr_img_dir_x2, exist_ok=True)
+
+        Image.fromarray(np.uint8(img_hr_0_x4)).save(os.path.join(hr_img_dir, 'hr0.png'))
+        Image.fromarray(np.uint8(img_hr_1_x4)).save(os.path.join(hr_img_dir, 'hr1.png'))
+        
+        Image.fromarray(np.uint8(img_lr_0_x4)).save(os.path.join(lr_img_dir_x4, 'lr0.png'))
+        Image.fromarray(np.uint8(img_lr_1_x4)).save(os.path.join(lr_img_dir_x4, 'lr1.png'))
+
+        Image.fromarray(np.uint8(img_lr_0_x2)).save(os.path.join(lr_img_dir_x2, 'lr0.png'))
+        Image.fromarray(np.uint8(img_lr_1_x2)).save(os.path.join(lr_img_dir_x2, 'lr1.png'))
+        print(f'{i/2}--KITTI2012--{data_type} samples have been generated...')
+
+
+def process_KITTI2015(data_dir, data_type, scale, output_dir):
+    if data_type == 'Validation':
+        print("The KITTI2015 dataset is not used for validation, only for testing.")
+        data_type = 'Test'
+    
+    data_dir = os.path.join(data_dir, 'testing') # KITTI2015/testing
+
+    img_extensions = ["png",]
+
+    l_data_dir = os.path.join(data_dir, 'image_2') # 左图
+    r_data_dir = os.path.join(data_dir, 'image_3') # 右图
+    l_imgs_list = [] 
+    for fname in os.listdir(l_data_dir):
+        if any(fname.endswith(ext) for ext in img_extensions):
+            l_imgs_list.append(os.path.join(l_data_dir, fname))
+    l_imgs_list = sorted(l_imgs_list)
+
+    r_imgs_list = []
+    for fname in os.listdir(r_data_dir):
+        if any(fname.endswith(ext) for ext in img_extensions):
+            r_imgs_list.append(os.path.join(r_data_dir, fname))
+    r_imgs_list = sorted(r_imgs_list)
+
+
+    hr_dir = os.path.join(output_dir, 'hr')
+    lr_dir_x2 = os.path.join(output_dir, 'lr_x2')
+    lr_dir_x4 = os.path.joint(output_dir,'lr_x4')
+
+    # 创建一个列表，包含0到len之间的所有偶数
+    even_numbers = [i for i in range(len(l_imgs_list)) if i % 2 == 0]
+    # 随机选择20个不同的偶数
+    selected_numbers = random.sample(even_numbers, 20)
+
+    for i in selected_numbers:
+        # 能被4整除的一定能被2整除
+        img_hr_0_x2, img_lr_0_x2 = get_lr_image_by_bicubic(l_imgs_list[i], scale = 2)
+        img_hr_1_x2, img_lr_1_x2 = get_lr_image_by_bicubic(r_imgs_list[i], scale = 2)
+
+        img_hr_0_x4, img_lr_0_x4 = get_lr_image_by_bicubic(l_imgs_list[i], scale = 4)
+        img_hr_1_x4, img_lr_1_x4 = get_lr_image_by_bicubic(r_imgs_list[i], scale = 4)
+
+        img_name = os.path.basename(l_imgs_list[i])
+        img_name = os.path.splitext(img_name)[0] # 000000_10
+        img_name = img_name.split('_')[0] # 000000
+
+        hr_img_dir = os.path.join(hr_dir, f'{img_name}')
+        lr_img_dir_x4 = os.path.join(lr_dir_x4, f'{img_name}')
+        lr_img_dir_x2 = os.path.join(lr_dir_x2, f'{img_name}')
+        os.makedirs(hr_img_dir, exist_ok=True)
+        os.makedirs(lr_img_dir_x4, exist_ok=True)
+        os.makedirs(lr_img_dir_x2, exist_ok=True)
+
+        Image.fromarray(np.uint8(img_hr_0_x4)).save(os.path.join(hr_img_dir, 'hr0.png'))
+        Image.fromarray(np.uint8(img_hr_1_x4)).save(os.path.join(hr_img_dir, 'hr1.png'))
+        
+        Image.fromarray(np.uint8(img_lr_0_x4)).save(os.path.join(lr_img_dir_x4, 'lr0.png'))
+        Image.fromarray(np.uint8(img_lr_1_x4)).save(os.path.join(lr_img_dir_x4, 'lr1.png'))
+
+        Image.fromarray(np.uint8(img_lr_0_x2)).save(os.path.join(lr_img_dir_x2, 'lr0.png'))
+        Image.fromarray(np.uint8(img_lr_1_x2)).save(os.path.join(lr_img_dir_x2, 'lr1.png'))
+        print(f'{i/2}--KITTI2015--{data_type} samples have been generated...')
+
+
+def process_KITTI2012_old(data_dir, data_type, scale, output_dir):
     if data_type == 'Validation':
         print("The KITTI2012 dataset is not used for validation, only for testing.")
         data_type = 'Test'
@@ -126,7 +252,7 @@ def process_KITTI2012(data_dir, data_type, scale, output_dir):
         print(f'{i/2}--KITTI2012--{data_type} samples have been generated...')
 
 
-def process_KITTI2015(data_dir, data_type, scale, output_dir):
+def process_KITTI2015_old(data_dir, data_type, scale, output_dir):
     if data_type == 'Validation':
         print("The KITTI2015 dataset is not used for validation, only for testing.")
         data_type = 'Test'
@@ -153,7 +279,7 @@ def process_KITTI2015(data_dir, data_type, scale, output_dir):
     hr_dir = os.path.join(output_dir, 'hr')
     lr_dir = os.path.join(output_dir, f'lr_x{scale}')
 
-    # 创建一个列表，包含0到389之间的所有偶数
+    # 创建一个列表，包含0到len之间的所有偶数
     even_numbers = [i for i in range(len(l_imgs_list)) if i % 2 == 0]
     # 随机选择20个不同的偶数
     selected_numbers = random.sample(even_numbers, 20)
