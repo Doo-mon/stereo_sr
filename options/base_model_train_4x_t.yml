@@ -1,7 +1,5 @@
 # ======================================  训练用配置文件 ======================================
 
-# 选这个作为baseline模型 用最小的网络结构来训练
-
 
 # =============================================================================================
 
@@ -12,6 +10,20 @@ model_type: ImageRestorationModel # 在 models 文件夹下面被定义才有效
 scale: 4 # 放大倍数
 num_gpu: 2 # 使用的gpu数量
 manual_seed: 10 # 训练种子
+
+# ===== 原网络结构设置 （所有设置的网络都要以network_开头）=====  
+network_g:
+  type: NAFSSR # 在 models/arch 文件夹下面被定义才有效
+  up_scale: 4 # 要和上面的scale一致
+
+  # 下面的设置决定了网络的结构和大小
+  width: 48 # 通道数
+  num_blks: 16 # stereo块的个数
+  drop_path_rate: 0
+  train_size: [1, 6, 30, 90]
+  drop_out_rate: 0.
+  # normal_block: NAFBlock
+  # fusion_block: SCAM
 
 
 # ===== 数据集设置 ===== 
@@ -54,21 +66,6 @@ datasets:
     dataroot_lq: ~/stereo_sr/datasets/val_data/lr_x4/
     io_backend:
       type: disk
-
-
-# ===== 原网络结构设置 （所有设置的网络都要以network_开头）=====  
-network_g:
-  type: NAFSSR # 在 models/arch 文件夹下面被定义才有效
-  up_scale: 4 # 要和上面的scale一致
-
-  # 下面的设置决定了网络的结构和大小
-  width: 48 # 通道数
-  num_blks: 16 # stereo块的个数
-  drop_path_rate: 0
-  train_size: [1, 6, 30, 90]
-  drop_out_rate: 0.
-  # normal_block: NAFBlock
-  # fusion_block: SCAM
 
 
 # ===== 路径 ===== 
