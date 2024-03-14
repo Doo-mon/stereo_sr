@@ -10,6 +10,46 @@ from basicsr.models.archs.NAFNet_arch import LayerNorm2d, NAFBlock, SimpleGate
 from basicsr.models.archs.NAFSSR_arch import SCAM, DropPath
 
 
+class SKM(nn.Module):
+    def __init__(self, c, r = 2):
+        super().__init__()
+        self.channel = c
+        self.r = r # 通道扩张倍数
+        self.m = 3 # 这个表示有三个空洞卷积
+        self.dilated_x2 = nn.Conv2d(self.channel, self.channel, kernel_size=3, stride=1, padding=2, dilation=2)
+        self.dilated_x4 = nn.Conv2d(self.channel, self.channel, kernel_size=3, stride=1, padding=4, dilation=4)
+        self.dilated_x6 = nn.Conv2d(self.channel, self.channel, kernel_size=3, stride=1, padding=6, dilation=6)
+
+        self.conv1x1 = nn.Conv2d(self.channel, self.channel * self.r, kernel_size=1, stride=1, padding=0) # 增大通道数
+        self.relu = nn.ReLU(inplace=True)
+
+        self.proj_weight = nn.Parameter(torch.zeros((self.channel * self.r, self.m * self.channel)), requires_grad=True)
+        self.softmax = nn.Softmax(dim=-1)
+    
+    def forward(self, x):
+        B, C, H, W = x.size()
+        d_1 = self.dilated_x2(x)
+        d_2 = self.dilated_x4(x)
+        d_3 = self.dilated_x6(x) # B, C, H, W
+
+        F_s = d_1 + d_2 + d_3
+        Z = torch.sum(F_s, dim=(-2, -1), keepdim=True) / (H * W) # B, C, 1, 1
+        S = self.conv1x1(Z) # B, C*r, 1, 1
+        S = self.relu(S).view(B, C * self.r) # B, C*r
+        Sw = torch.matmul(S, self.proj_weight) 
+        reshape_Sw = Sw.view(B, 1, self.m, C) 
+
+        Sw = self.softmax(reshape_Sw) # B, 1, m, C
+        chunks = Sw.chunk(self.m, dim=-2) # B, 1, 1, C
+
+        Ds = [d_1, d_2, d_3]
+        out = torch.zeros((B, C, H, W))
+        for i, chunk in enumerate(chunks):
+            out += Ds[i] * torch.transpose(chunk,1,3) # (B, C, H, W) * (B, C, 1, 1) -> (B, C, H, W)
+
+        return out
+
+
 
 class Fusion_Block(nn.Module):
 
@@ -80,8 +120,6 @@ class StereoNet(nn.Module):
         return out
 
 
-
-
 class newNAFSSR(Local_Base, StereoNet):
     def __init__(self, *args, train_size=(1, 6, 30, 90), fast_imp=False, fusion_from=-1, fusion_to=1000, **kwargs):
         Local_Base.__init__(self)
@@ -100,36 +138,20 @@ class newNAFSSR(Local_Base, StereoNet):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# 下面的语句是测试用
 if __name__ == '__main__':
+
+    skm = SKM(c = 16)
+    x = torch.randn((2, 16, 64, 64))
+
+    out = skm(x)
+
+
     pass
+
+
+
+# if __name__ == '__main__':
+#     pass
     # num_blks = 128
     # width = 128
     # droppath=0.1

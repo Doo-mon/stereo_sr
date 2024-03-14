@@ -22,6 +22,7 @@ from basicsr.models.archs.NAFNet_arch import LayerNorm2d, NAFBlock
 from basicsr.models.archs.arch_util import MySequential
 from basicsr.models.archs.local_arch import Local_Base
 
+from basicsr.models.archs.newNAFSSR_arch import SKM
 class SCAM(nn.Module):
     '''
     Stereo Cross Attention Module (SCAM)
@@ -30,10 +31,13 @@ class SCAM(nn.Module):
         super().__init__()
         self.scale = c ** -0.5
 
+        self.l_proj1 = SKM(c)
+        self.l_proj1 = SKM(c)
+
         self.norm_l = LayerNorm2d(c)
         self.norm_r = LayerNorm2d(c)
-        self.l_proj1 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
-        self.r_proj1 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+        # self.l_proj1 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+        # self.r_proj1 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
         
         self.beta = nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
         self.gamma = nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
