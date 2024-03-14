@@ -9,16 +9,17 @@ from basicsr.models.archs.local_arch import Local_Base
 from basicsr.models.archs.NAFNet_arch import LayerNorm2d, NAFBlock, SimpleGate
 from basicsr.models.archs.NAFSSR_arch import SCAM, DropPath
 
-
+# Select Kernel Module
 class SKM(nn.Module):
-    def __init__(self, c, r = 2):
+    def __init__(self, c, r = 2, m = 4):
         super().__init__()
         self.channel = c
         self.r = r # 通道扩张倍数
-        self.m = 3 # 这个表示有三个空洞卷积
-        self.dilated_x2 = nn.Conv2d(self.channel, self.channel, kernel_size=3, stride=1, padding=2, dilation=2)
-        self.dilated_x4 = nn.Conv2d(self.channel, self.channel, kernel_size=3, stride=1, padding=4, dilation=4)
-        self.dilated_x6 = nn.Conv2d(self.channel, self.channel, kernel_size=3, stride=1, padding=6, dilation=6)
+        self.m = m # 这个表示有三个空洞卷积
+
+        self.dilated_conv_list = []
+        for i in range(self.m):
+            self.dilated_conv_list.append(nn.Conv2d(self.channel, self.channel, kernel_size=3, stride=1, padding=2*(i+1), dilation=2*(i+1)))
 
         self.conv1x1 = nn.Conv2d(self.channel, self.channel * self.r, kernel_size=1, stride=1, padding=0) # 增大通道数
         self.relu = nn.ReLU(inplace=True)
@@ -28,11 +29,12 @@ class SKM(nn.Module):
     
     def forward(self, x):
         B, C, H, W = x.size()
-        d_1 = self.dilated_x2(x)
-        d_2 = self.dilated_x4(x)
-        d_3 = self.dilated_x6(x) # B, C, H, W
-
-        F_s = d_1 + d_2 + d_3
+        D_list = []
+        F_s = torch.zeros((B, C, H, W))
+        for i in range(self.m):
+            D = self.dilated_conv_list[i](x)
+            D_list.append(D)
+            F_s += D
         Z = torch.sum(F_s, dim=(-2, -1), keepdim=True) / (H * W) # B, C, 1, 1
         S = self.conv1x1(Z) # B, C*r, 1, 1
         S = self.relu(S).view(B, C * self.r) # B, C*r
@@ -42,10 +44,9 @@ class SKM(nn.Module):
         Sw = self.softmax(reshape_Sw) # B, 1, m, C
         chunks = Sw.chunk(self.m, dim=-2) # B, 1, 1, C
 
-        Ds = [d_1, d_2, d_3]
         out = torch.zeros((B, C, H, W))
         for i, chunk in enumerate(chunks):
-            out += Ds[i] * torch.transpose(chunk,1,3) # (B, C, H, W) * (B, C, 1, 1) -> (B, C, H, W)
+            out += D_list[i] * torch.transpose(chunk, 1, 3) # (B, C, H, W) * (B, C, 1, 1) -> (B, C, H, W)
 
         return out
 

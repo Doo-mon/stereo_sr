@@ -22,7 +22,50 @@ from basicsr.models.archs.NAFNet_arch import LayerNorm2d, NAFBlock
 from basicsr.models.archs.arch_util import MySequential
 from basicsr.models.archs.local_arch import Local_Base
 
-from basicsr.models.archs.newNAFSSR_arch import SKM
+#from basicsr.models.archs.newNAFSSR_arch import SKM
+
+
+class SKM(nn.Module):
+    def __init__(self, c, r = 2, m = 4):
+        super().__init__()
+        self.channel = c
+        self.r = r # 通道扩张倍数
+        self.m = m # 这个表示有三个空洞卷积
+
+        self.dilated_conv_list = []
+        for i in range(self.m):
+            self.dilated_conv_list.append(nn.Conv2d(self.channel, self.channel, kernel_size=3, stride=1, padding=2*(i+1), dilation=2*(i+1)))
+
+        self.conv1x1 = nn.Conv2d(self.channel, self.channel * self.r, kernel_size=1, stride=1, padding=0) # 增大通道数
+        self.relu = nn.ReLU(inplace=True)
+
+        self.proj_weight = nn.Parameter(torch.zeros((self.channel * self.r, self.m * self.channel)), requires_grad=True)
+        self.softmax = nn.Softmax(dim=-1)
+    
+    def forward(self, x):
+        B, C, H, W = x.size()
+        D_list = []
+        F_s = torch.zeros((B, C, H, W))
+        for i in range(self.m):
+            D = self.dilated_conv_list[i](x)
+            D_list.append(D)
+            F_s += D
+        Z = torch.sum(F_s, dim=(-2, -1), keepdim=True) / (H * W) # B, C, 1, 1
+        S = self.conv1x1(Z) # B, C*r, 1, 1
+        S = self.relu(S).view(B, C * self.r) # B, C*r
+        Sw = torch.matmul(S, self.proj_weight) 
+        reshape_Sw = Sw.view(B, 1, self.m, C) 
+
+        Sw = self.softmax(reshape_Sw) # B, 1, m, C
+        chunks = Sw.chunk(self.m, dim=-2) # B, 1, 1, C
+
+        out = torch.zeros((B, C, H, W))
+        for i, chunk in enumerate(chunks):
+            out += D_list[i] * torch.transpose(chunk, 1, 3) # (B, C, H, W) * (B, C, 1, 1) -> (B, C, H, W)
+
+        return out
+
+
 class SCAM(nn.Module):
     '''
     Stereo Cross Attention Module (SCAM)
