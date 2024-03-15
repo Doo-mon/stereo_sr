@@ -45,7 +45,8 @@ class SKM(nn.Module):
     def forward(self, x):
         B, C, H, W = x.size()
         D_list = []
-        F_s = torch.zeros((B, C, H, W))
+        F_s = torch.zeros((B, C, H, W)).to("cuda")
+        x = x.to("cuda")
         for i in range(self.m):
             D = self.dilated_conv_list[i](x)
             D_list.append(D)
@@ -59,7 +60,7 @@ class SKM(nn.Module):
         Sw = self.softmax(reshape_Sw) # B, 1, m, C
         chunks = Sw.chunk(self.m, dim=-2) # B, 1, 1, C
 
-        out = torch.zeros((B, C, H, W))
+        out = torch.zeros((B, C, H, W)).to("cuda")
         for i, chunk in enumerate(chunks):
             out += D_list[i] * torch.transpose(chunk, 1, 3) # (B, C, H, W) * (B, C, 1, 1) -> (B, C, H, W)
 
@@ -75,7 +76,7 @@ class SCAM(nn.Module):
         self.scale = c ** -0.5
 
         self.l_proj1 = SKM(c)
-        self.l_proj1 = SKM(c)
+        self.r_proj1 = SKM(c)
 
         self.norm_l = LayerNorm2d(c)
         self.norm_r = LayerNorm2d(c)
