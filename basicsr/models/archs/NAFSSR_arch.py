@@ -22,9 +22,8 @@ from basicsr.models.archs.NAFNet_arch import LayerNorm2d, NAFBlock
 from basicsr.models.archs.arch_util import MySequential
 from basicsr.models.archs.local_arch import Local_Base
 
-#from basicsr.models.archs.newNAFSSR_arch import SKM
 
-
+# Select Kernel Module
 class SKM(nn.Module):
     def __init__(self, c, r = 2, m = 4):
         super().__init__()
@@ -45,12 +44,15 @@ class SKM(nn.Module):
     def forward(self, x):
         B, C, H, W = x.size()
         D_list = []
-        F_s = torch.zeros((B, C, H, W)).to("cuda")
-        x = x.to("cuda")
-        for i in range(self.m):
-            D = self.dilated_conv_list[i](x)
+        F_s = None
+        for dilated_conv in self.dilated_conv_list:
+            D = dilated_conv(x)
             D_list.append(D)
-            F_s += D
+            if F_s is not None:
+                F_s += D
+            else:
+                F_s = D
+
         Z = torch.sum(F_s, dim=(-2, -1), keepdim=True) / (H * W) # B, C, 1, 1
         S = self.conv1x1(Z) # B, C*r, 1, 1
         S = self.relu(S).view(B, C * self.r) # B, C*r
@@ -60,10 +62,12 @@ class SKM(nn.Module):
         Sw = self.softmax(reshape_Sw) # B, 1, m, C
         chunks = Sw.chunk(self.m, dim=-2) # B, 1, 1, C
 
-        out = torch.zeros((B, C, H, W)).to("cuda")
+        out = None
         for i, chunk in enumerate(chunks):
-            out += D_list[i] * torch.transpose(chunk, 1, 3) # (B, C, H, W) * (B, C, 1, 1) -> (B, C, H, W)
-
+            if out is not None:
+                out += D_list[i] * torch.transpose(chunk, 1, 3) # (B, C, H, W) * (B, C, 1, 1) -> (B, C, H, W)
+            else:
+                out = D_list[i] * torch.transpose(chunk, 1, 3)
         return out
 
 

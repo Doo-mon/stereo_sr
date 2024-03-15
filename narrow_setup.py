@@ -7,9 +7,9 @@ import argparse
 # python narrow_setup.py --total_gpu 6 --need_gpu 2 --interval 2
 
 # train.py
-cmd = "python -m torch.distributed.launch --nproc_per_node=2 --master_port=29500  \
+cmd = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29500  \
        ~/stereo_sr/train.py \
-       -opt ./options/base_model_train_4x_T.yml"
+       -opt ./options/skm_model_train_4x_T.yml"
 
 # test.py
 cmd1 = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29500  \
@@ -21,7 +21,7 @@ def parse_setting():
     parser = argparse.ArgumentParser(description='narrow setup')
 
     parser.add_argument("--total_gpu", default=6, type=int, help="number of gpu")
-    parser.add_argument("--need_gpu", default=2, type=int, help="number of gpu")
+    parser.add_argument("--need_gpu", default=1, type=int, help="number of gpu")
     parser.add_argument("--interval", default=2, type=int, help="interval time for checking gpu status")
 
     return parser.parse_args()

@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from basicsr.models.archs.arch_util import MySequential
 from basicsr.models.archs.local_arch import Local_Base
 from basicsr.models.archs.NAFNet_arch import LayerNorm2d, NAFBlock, SimpleGate
-from basicsr.models.archs.NAFSSR_arch import SCAM, DropPath
+from basicsr.models.archs.NAFSSR_arch import  DropPath
 
 # Select Kernel Module
 class SKM(nn.Module):
@@ -30,11 +30,15 @@ class SKM(nn.Module):
     def forward(self, x):
         B, C, H, W = x.size()
         D_list = []
-        F_s = torch.zeros((B, C, H, W))
-        for i in range(self.m):
-            D = self.dilated_conv_list[i](x)
+        F_s = None
+        for dilated_conv in self.dilated_conv_list:
+            D = dilated_conv(x)
             D_list.append(D)
-            F_s += D
+            if F_s is not None:
+                F_s += D
+            else:
+                F_s = D
+
         Z = torch.sum(F_s, dim=(-2, -1), keepdim=True) / (H * W) # B, C, 1, 1
         S = self.conv1x1(Z) # B, C*r, 1, 1
         S = self.relu(S).view(B, C * self.r) # B, C*r
@@ -44,10 +48,12 @@ class SKM(nn.Module):
         Sw = self.softmax(reshape_Sw) # B, 1, m, C
         chunks = Sw.chunk(self.m, dim=-2) # B, 1, 1, C
 
-        out = torch.zeros((B, C, H, W))
+        out = None
         for i, chunk in enumerate(chunks):
-            out += D_list[i] * torch.transpose(chunk, 1, 3) # (B, C, H, W) * (B, C, 1, 1) -> (B, C, H, W)
-
+            if out is not None:
+                out += D_list[i] * torch.transpose(chunk, 1, 3) # (B, C, H, W) * (B, C, 1, 1) -> (B, C, H, W)
+            else:
+                out = D_list[i] * torch.transpose(chunk, 1, 3)
         return out
 
 
@@ -90,7 +96,7 @@ class Stereo_Block(nn.Module):
 class StereoNet(nn.Module):
     def __init__(self, up_scale=4, width=48, num_blks=16, img_channel=3, drop_path_rate=0., drop_out_rate=0., fusion_from=-1, fusion_to=-1, dual=False, **kwargs):
         super().__init__()
-        self.dual = dual    # dual input for stereo SR (left view, right view)
+        self.dual = dual
         self.intro = nn.Conv2d(in_channels=img_channel, out_channels=width, kernel_size=3, padding=1, stride=1, groups=1, bias=True)
         # 自定义序列类 可以处理双目的情况 # 注意 有两个不同的 dropout 值
         self.body = MySequential(
@@ -111,7 +117,7 @@ class StereoNet(nn.Module):
     def forward(self, inp):
         inp_hr = F.interpolate(inp, scale_factor=self.up_scale, mode='bilinear')
         if self.dual:
-            inp = inp.chunk(2, dim=1)
+            inp = inp.chunk(2, dim=1) # 数据集是在通道上面叠加的
         else:
             inp = (inp, )
         feats = [self.intro(x) for x in inp]
@@ -145,7 +151,7 @@ if __name__ == '__main__':
     x = torch.randn((2, 16, 64, 64))
 
     out = skm(x)
-
+    print(out)
 
     pass
 
