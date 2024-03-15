@@ -99,6 +99,7 @@ ref.
 class Local_Base():
     def convert(self, *args, train_size, **kwargs):
         replace_layers(self, *args, train_size=train_size, **kwargs)
-        imgs = torch.rand(train_size)
-        with torch.no_grad():
-            self.forward(imgs)
+        # 下面这个代码是测试用的 
+        # imgs = torch.rand(train_size)
+        # with torch.no_grad():
+        #     self.forward(imgs)

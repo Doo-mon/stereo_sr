@@ -7,9 +7,9 @@ import argparse
 # python narrow_setup.py --total_gpu 6 --need_gpu 2 --interval 2
 
 # train.py
-cmd = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29500  \
+cmd = "python -m torch.distributed.launch --nproc_per_node=2 --master_port=29500  \
        ~/stereo_sr/train.py \
-       -opt ./options/skm_model_train_4x_T.yml"
+       -opt ./options/skm_model_train_4x_S.yml"
 
 # test.py
 cmd1 = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29500  \
@@ -20,8 +20,8 @@ cmd1 = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=2950
 def parse_setting():
     parser = argparse.ArgumentParser(description='narrow setup')
 
-    parser.add_argument("--total_gpu", default=6, type=int, help="number of gpu")
-    parser.add_argument("--need_gpu", default=1, type=int, help="number of gpu")
+    parser.add_argument("--total_gpu", default=4, type=int, help="number of gpu")
+    parser.add_argument("--need_gpu", default=2, type=int, help="number of gpu")
     parser.add_argument("--interval", default=2, type=int, help="interval time for checking gpu status")
 
     return parser.parse_args()
@@ -84,7 +84,7 @@ def narrow_setup_multi_gpu(command, interval = 2, total_gpu = 8, need_gpu = 8):
         i = i % 5
         for n in range(total_gpu): # 循环获取所有gpu的信息再进行判断
             gpu_power, gpu_memory = gpu_info(gpu_index = n)
-            if gpu_memory < 1000 and gpu_power < 20 and mark_list[n] == 0:
+            if gpu_memory < 1000 and gpu_power < 25 and mark_list[n] == 0:
                     selected_gpu.append(n)
                     mark_list[n] = 1
                     count += 1    

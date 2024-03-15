@@ -192,6 +192,16 @@ class NAFSSR(Local_Base, NAFNetSR):
 
 # 下面的语句是测试用
 if __name__ == '__main__':
+    # num_blks = 32
+    # width = 16
+    # droppath=0.1
+    # train_size = (1, 6, 30, 90)
+    # net = NAFSSR(up_scale=2,train_size=train_size, fast_imp=True, width=width, num_blks=num_blks, drop_path_rate=droppath)
+
+    # net = net.cpu()
+    # data = torch.randn((1, 6, 128, 128)).cpu()
+    # print(net(data))
+
     pass
     # num_blks = 128
     # width = 128

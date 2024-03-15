@@ -5,10 +5,10 @@
 
 # ===== 通用设置 ======
 # 如果名字含有debug 则会有一些不同
-name: skm_model_train_4x_T # 实验名称 这个会作为文件夹的名字保存到experiments文件夹下
+name: skm_model_train_4x_S # 实验名称 这个会作为文件夹的名字保存到experiments文件夹下
 model_type: ImageRestorationModel # 在 models 文件夹下面被定义才有效
 scale: 4 # 放大倍数
-num_gpu: 1 # 使用的gpu数量
+num_gpu: 2 # 使用的gpu数量
 manual_seed: 10 # 训练种子
 
 # ===== 原网络结构设置 （所有设置的网络都要以network_开头）=====  
@@ -17,8 +17,8 @@ network_g:
   up_scale: 4 # 要和上面的scale一致
 
   # 下面的设置决定了网络的结构和大小
-  width: 48 # 通道数
-  num_blks: 16 # stereo块的个数
+  width: 64 # 通道数
+  num_blks: 32 # stereo块的个数
   drop_path_rate: 0
   train_size: [1, 6, 30, 90]
   drop_out_rate: 0.
