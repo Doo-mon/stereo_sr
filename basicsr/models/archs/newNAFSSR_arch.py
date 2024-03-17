@@ -7,11 +7,11 @@ import torch.nn.functional as F
 from basicsr.models.archs.arch_util import MySequential
 from basicsr.models.archs.local_arch import Local_Base
 from basicsr.models.archs.NAFNet_arch import LayerNorm2d, NAFBlock, SimpleGate
-from basicsr.models.archs.NAFSSR_arch import  DropPath
+from basicsr.models.archs.NAFSSR_arch import  DropPath, SCAM
 
 # Select Kernel Module
 class SKM(nn.Module):
-    def __init__(self, c, r = 2, m = 4):
+    def __init__(self, c, r = 2, m = 4, **kwargs):
         super().__init__()
         self.channel = c
         self.r = r # 通道扩张倍数
@@ -57,33 +57,75 @@ class SKM(nn.Module):
         return out
 
 
+class SKSCAM(nn.Module):
+    def __init__(self, c, **kwargs):
+        super().__init__()
+        self.scale = c ** -0.5
+
+        self.l_proj1 = SKM(c, **kwargs)
+        self.r_proj1 = SKM(c, **kwargs)
+
+        self.norm_l = LayerNorm2d(c)
+        self.norm_r = LayerNorm2d(c)
+        
+        self.beta = nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
+        self.gamma = nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
+
+        self.l_proj2 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+        self.r_proj2 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+
+    def forward(self, x_l, x_r):
+        Q_l = self.l_proj1(self.norm_l(x_l)).permute(0, 2, 3, 1)  # B, H, W, c
+        Q_r_T = self.r_proj1(self.norm_r(x_r)).permute(0, 2, 1, 3) # B, H, c, W (transposed)
+
+        V_l = self.l_proj2(x_l).permute(0, 2, 3, 1)  # B, H, W, c
+        V_r = self.r_proj2(x_r).permute(0, 2, 3, 1)  # B, H, W, c
+
+        # (B, H, W, c) x (B, H, c, W) -> (B, H, W, W)
+        attention = torch.matmul(Q_l, Q_r_T) * self.scale
+
+        F_r2l = torch.matmul(torch.softmax(attention, dim=-1), V_r)  # B, H, W, c
+        F_l2r = torch.matmul(torch.softmax(attention.permute(0, 1, 3, 2), dim=-1), V_l) # B, H, W, c
+
+        # scale
+        F_r2l = F_r2l.permute(0, 3, 1, 2) * self.beta
+        F_l2r = F_l2r.permute(0, 3, 1, 2) * self.gamma
+        return x_l + F_r2l, x_r + F_l2r
+
 
 class Fusion_Block(nn.Module):
 
-    def __init__(self):
+    def __init__(self, channel, **kwargs):
         super().__init__()
-        pass
+        if kwargs.get("Fusion_Block")=="SKSCAM":
+            self.module = SKSCAM(channel, **kwargs)
+        elif kwargs.get("Fusion_Block")=="SCAM":
+            self.module = SCAM(channel, **kwargs)
+        else:
+            raise ValueError("Fusion_Block is not defined")
 
     def forward(self, x_l, x_r):
-        pass
+        return self.module(x_l, x_r)
 
 
-class Normal_Block(nn.Module):
+class Extraction_Block(nn.Module):
 
-    def __init__(self):
+    def __init__(self, channel, drop_out_rate=0., **kwargs):
         super().__init__()
-        pass
-
+        if kwargs.get("Extraction_Block")=="NAFBlock":
+            self.module = NAFBlock(channel, drop_out_rate=drop_out_rate, **kwargs)
+        else:
+            raise ValueError("Extraction_Block is not defined")
 
     def forward(self, x):
-        pass
+        return self.module(x)
 
 
 
 class Stereo_Block(nn.Module):
     def __init__(self, channel, fusion=False, drop_out_rate=0., **kwargs):
         super().__init__()
-        self.blk = Normal_Block(channel, drop_out_rate = drop_out_rate, **kwargs)
+        self.blk = Extraction_Block(channel, drop_out_rate = drop_out_rate, **kwargs)
         self.fusion = Fusion_Block(channel, **kwargs) if fusion else None # 用fusion来控制每个块后面是否跟着融合块
 
     def forward(self, *feats): # 双目的情况下应该是 （x1,x2）
@@ -137,8 +179,8 @@ class newNAFSSR(Local_Base, StereoNet):
         base_size = (int(H * 1.5), int(W * 1.5))
         self.eval()
         with torch.no_grad():
-            # 下面这句话 调用了一个 replace_layer 的函数
-            # 作用： 寻找所有的 AdaptiveAvgPool2d 层，并用一个自定义的 AvgPool2d 层替换它们
+            # 下面这句话 
+            # 调用了一个 replace_layer 的函数 寻找所有的 AdaptiveAvgPool2d，用一个自定义的 AvgPool2d 层替换它们
             self.convert(base_size=base_size, train_size=train_size, fast_imp=fast_imp)
 
 

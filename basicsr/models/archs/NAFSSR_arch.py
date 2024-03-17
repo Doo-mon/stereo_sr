@@ -75,17 +75,17 @@ class SCAM(nn.Module):
     '''
     Stereo Cross Attention Module (SCAM)
     '''
-    def __init__(self, c):
+    def __init__(self, c, **kwargs):
         super().__init__()
         self.scale = c ** -0.5
 
-        self.l_proj1 = SKM(c)
-        self.r_proj1 = SKM(c)
+        # self.l_proj1 = SKM(c)
+        # self.r_proj1 = SKM(c)
 
         self.norm_l = LayerNorm2d(c)
         self.norm_r = LayerNorm2d(c)
-        # self.l_proj1 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
-        # self.r_proj1 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+        self.l_proj1 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+        self.r_proj1 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
         
         self.beta = nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
         self.gamma = nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
@@ -132,10 +132,10 @@ class NAFBlockSR(nn.Module):
     '''
     NAFBlock for Super-Resolution
     '''
-    def __init__(self, c, fusion=False, drop_out_rate=0.):
+    def __init__(self, c, fusion=False, drop_out_rate=0., **kwargs):
         super().__init__()
-        self.blk = NAFBlock(c, drop_out_rate=drop_out_rate)
-        self.fusion = SCAM(c) if fusion else None
+        self.blk = NAFBlock(c, drop_out_rate=drop_out_rate, **kwargs)
+        self.fusion = SCAM(c, **kwargs) if fusion else None
 
     def forward(self, *feats):
         feats = tuple([self.blk(x) for x in feats])
@@ -147,13 +147,13 @@ class NAFNetSR(nn.Module):
     '''
     NAFNet for Super-Resolution
     '''
-    def __init__(self, up_scale=4, width=48, num_blks=16, img_channel=3, drop_path_rate=0., drop_out_rate=0., fusion_from=-1, fusion_to=-1, dual=False):
+    def __init__(self, up_scale=4, width=48, num_blks=16, img_channel=3, drop_path_rate=0., drop_out_rate=0., fusion_from=-1, fusion_to=-1, dual=False,**kwargs):
         super().__init__()
         self.dual = dual    # dual input for stereo SR (left view, right view)
         self.intro = nn.Conv2d(in_channels=img_channel, out_channels=width, kernel_size=3, padding=1, stride=1, groups=1, bias=True)
         # 自定义序列 方便多输入
         self.body = MySequential(
-            *[DropPath(drop_path_rate, NAFBlockSR(width, fusion=(fusion_from <= i and i <= fusion_to), drop_out_rate=drop_out_rate)) for i in range(num_blks)]
+            *[DropPath(drop_path_rate, NAFBlockSR(width, fusion=(fusion_from <= i and i <= fusion_to), drop_out_rate=drop_out_rate,**kwargs)) for i in range(num_blks)]
         )
 
         self.up = nn.Sequential(

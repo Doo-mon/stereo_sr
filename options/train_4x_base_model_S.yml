@@ -5,26 +5,55 @@
 
 # ===== 通用设置 ======
 # 如果名字含有debug 则会有一些不同
-name: base_model_train_4x_S # 实验名称 这个会作为文件夹的名字保存到experiments文件夹下
+
+# TODO: name 会有对应的文件夹 所以每个不同的设置都要改
+name: train_4x_base_model_S # 实验名称 这个会作为文件夹的名字保存到experiments文件夹下
+
+# TODO: 每次记得有不同
+num_gpu: 1 # 使用的gpu数量
+
 model_type: ImageRestorationModel # 在 models 文件夹下面被定义才有效
 scale: 4 # 放大倍数
-num_gpu: 2 # 使用的gpu数量
 manual_seed: 10 # 训练种子
 
 # ===== 原网络结构设置 （所有设置的网络都要以network_开头）=====  
 network_g:
-  type: NAFSSR # 在 models/arch 文件夹下面被定义才有效
+  # TODO: 这里记得要对应改
+  type: newNAFSSR # 在 models/arch 文件夹下面被定义才有效
+  Extraction_Block: NAFBlock
+  Fusion_block: SCAM
   up_scale: 4 # 要和上面的scale一致
-
+  
   # 下面的设置决定了网络的结构和大小
   width: 64 # 通道数
   num_blks: 32 # stereo块的个数
   drop_path_rate: 0.1
   train_size: [1, 6, 30, 90]
   drop_out_rate: 0.
-  # normal_block: NAFBlock
-  # fusion_block: SCAM
+  
 
+# ===== 训练设置 ===== 
+train:
+  optim_g:
+    type: AdamW
+    lr: !!float 3e-3
+    weight_decay: !!float 0
+    betas: [0.9, 0.9]
+
+  scheduler:
+    type: TrueCosineAnnealingLR
+    T_max: 100000                    
+    eta_min: !!float 1e-7
+
+  total_iter: 100000        # TODO: 这个记得不同的文件要改
+  warmup_iter: -1 # no warm up
+  mixup: false
+
+  # 训练loss的设置
+  pixel_opt:
+    type: MSELoss
+    loss_weight: 1.
+    reduction: mean
 
 # ===== 数据集设置 ===== 
 datasets:
@@ -35,7 +64,7 @@ datasets:
     # 有多个路径 
     dataroot_gt: ~/stereo_sr/datasets/train_data/patches_x4_0/
     dataroot_lq: ~/stereo_sr/datasets/train_data/patches_x4_0/
-    file_num: 2
+    file_num: 2  # TODO: 这个记得x2和x4有不同
 
     io_backend: # 数据保存在磁盘上
       type: disk
@@ -52,16 +81,16 @@ datasets:
     use_rot: false
     flip_RGB: true
 
-    # dataloader的设置  这里主要注意 batch_size_per_gpu 太大会爆内存！
+    # dataloader的设置  
     use_shuffle: true
     num_worker_per_gpu: 8
-    batch_size_per_gpu: 2
+    batch_size_per_gpu: 4   # TODO: 如果爆内存，这个要改
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
 
   val: # 同上
     name: Flickr1024-ssr-val
-    type: PairedStereoImageDataset
+    type: PairedStereoImageDataset # 因为验证集数据比较少 所以用原来的
     dataroot_gt: ~/stereo_sr/datasets/val_data/hr/
     dataroot_lq: ~/stereo_sr/datasets/val_data/lr_x4/
     io_backend:
@@ -88,31 +117,6 @@ path:
   # visualization : user/results/name/visualization
 
 
-
-# ===== 训练设置 ===== 
-train:
-  optim_g:
-    type: AdamW
-    lr: !!float 3e-3
-    weight_decay: !!float 0
-    betas: [0.9, 0.9]
-
-  scheduler:
-    type: TrueCosineAnnealingLR
-    T_max: 200000
-    eta_min: !!float 1e-7
-
-  total_iter: 200000
-  warmup_iter: -1 # no warm up
-  mixup: false
-
-  # 训练loss的设置
-  pixel_opt:
-    type: MSELoss
-    loss_weight: 1.
-    reduction: mean
-
-
 # ===== 验证设置 ===== 
 val:
   val_freq: !!float 1e4 # 每n次iter验证一次 不宜太频繁，会影响训练速度
@@ -134,7 +138,7 @@ val:
 logger: 
   print_freq: 200 # 每n次iter打印一次
   save_checkpoint_freq: !!float 1e4 # 每n次iter保存一次模型
-  use_tb_logger: true # TensorBoard 日志记录器
+  use_tb_logger: false # TensorBoard 日志记录器
   wandb:
     project: ~
     resume_id: ~

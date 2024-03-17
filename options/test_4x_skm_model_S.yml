@@ -4,7 +4,7 @@
 # =============================================================================================
 
 # ===== 通用设置 ======
-name: base_model_test_4x_T
+name: test_4x_skm_model_S  # TODO: 这里记得要对应改
 model_type: ImageRestorationModel
 scale: 4
 num_gpu: 1 # set num_gpu: 0 for cpu mode
@@ -12,15 +12,19 @@ manual_seed: 10
 
 # ===== 原网络结构设置 （所有设置的网络都要以network_开头）=====  
 network_g:
-  type: NAFSSR
+  # TODO: 这里记得要对应改
+  type: newNAFSSR
+  Extraction_Block: NAFBlock
+  Fusion_block: SKSCAM
   up_scale: 4
-  width: 48
-  num_blks: 16
+  width: 64
+  num_blks: 32
 
 
 # ===== 路径 ===== 
 path:
-  pretrain_network_g: experiments/base_model_train_4x_T/models/net_g_latest.pth # 测试的时候这个是必须输入的
+  # TODO: 这里记得要对应改 注意这里的名字是train 
+  pretrain_network_g: experiments/train_4x_skm_model_S/models/net_g_latest.pth # 测试的时候这个是必须输入的
   strict_load_g: true
   resume_state: ~
 

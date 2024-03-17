@@ -1,0 +1,98 @@
+# ======================================  测试用配置文件 ======================================
+
+
+# =============================================================================================
+
+# ===== 通用设置 ======
+name: test_4x_base_model_S  # TODO: 这里记得要对应改
+model_type: ImageRestorationModel
+scale: 4
+num_gpu: 1 # set num_gpu: 0 for cpu mode
+manual_seed: 10
+
+# ===== 原网络结构设置 （所有设置的网络都要以network_开头）=====  
+network_g:
+  # TODO: 这里记得要对应改
+  type: newNAFSSR
+  Extraction_Block: NAFBlock
+  Fusion_block: SCAM
+  up_scale: 4
+  width: 64
+  num_blks: 32
+
+
+# ===== 路径 ===== 
+path:
+  # TODO: 这里记得要对应改 注意这里的名字是train 
+  pretrain_network_g: experiments/train_4x_base_model_S/models/net_g_latest.pth # 测试的时候这个是必须输入的
+  strict_load_g: true
+  resume_state: ~
+
+# ===== 验证设置 ===== 
+val:
+  save_img: true # 是否保存图像
+  grids: false
+
+  metrics:
+    psnr: # metric name, can be arbitrary
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: calculate_skimage_ssim
+    psnr_left: 
+      type: calculate_psnr_left
+      crop_border: 0
+      test_y_channel: false
+    ssim_left:
+      type: calculate_skimage_ssim_left
+
+
+
+# ===== 数据集设置 ===== 
+datasets:
+  test0:
+    name: KITTI2012
+    type: PairedStereoImageDataset
+    dataroot_gt: ~/stereo_sr/datasets/test_data/KITTI2012/hr
+    dataroot_lq: ~/stereo_sr/datasets/test_data/KITTI2012/lr_x4
+    io_backend:
+      type: disk
+
+  test1:
+    name: KITTI2015
+    type: PairedStereoImageDataset
+    dataroot_gt: ~/stereo_sr/datasets/test_data/KITTI2015/hr
+    dataroot_lq: ~/stereo_sr/datasets/test_data/KITTI2015/lr_x4
+    io_backend:
+      type: disk
+    
+  test2:
+    name: Middlebury_test
+    type: PairedStereoImageDataset
+    dataroot_gt: ~/stereo_sr/datasets/test_data/Middlebury_test/hr
+    dataroot_lq: ~/stereo_sr/datasets/test_data/Middlebury_test/lr_x4
+    io_backend:
+      type: disk
+  
+  test3:
+    name: Flickr1024
+    type: PairedStereoImageDataset
+    dataroot_gt: ~/stereo_sr/datasets/test_data/Flickr1024/hr
+    dataroot_lq: ~/stereo_sr/datasets/test_data/Flickr1024/lr_x4
+    io_backend:
+      type: disk
+
+  test4:
+    name: Middlebury2021
+    type: PairedStereoImageDataset
+    dataroot_gt: ~/stereo_sr/datasets/test_data/Middlebury2021/hr
+    dataroot_lq: ~/stereo_sr/datasets/test_data/Middlebury2021/lr_x4
+    io_backend:
+      type: disk
+
+
+# ===== 分布式训练设置 =====
+dist_params:
+  backend: nccl # 指定了分布式通信使用的后端。在PyTorch中，nccl 是专为NVIDIA GPU设计的
+  port: 29500 # 用于节点间通信的端口 每个参与分布式训练的节点需要能够通过这个端口相互通信，因此这个端口应该在所有节点上保持开放
