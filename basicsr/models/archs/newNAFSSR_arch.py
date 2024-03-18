@@ -104,8 +104,8 @@ class Fusion_Block(nn.Module):
         else:
             raise ValueError("Fusion_Block is not defined")
 
-    def forward(self, x_l, x_r):
-        return self.module(x_l, x_r)
+    def forward(self, *feats):
+        return self.module(*feats)
 
 
 class Extraction_Block(nn.Module):
