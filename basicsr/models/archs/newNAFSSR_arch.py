@@ -104,9 +104,9 @@ class Fusion_Block(nn.Module):
         else:
             raise ValueError("Fusion_Block is not defined")
 
-    def forward(self, *feats):
-        feats = tuple(x for x in feats)
-        return self.module(*feats)
+    def forward(self, *feats): # 这里要返回元组才行
+        feats = tuple([self.module(*feats)])
+        return feats
 
 
 class Extraction_Block(nn.Module):
@@ -132,7 +132,7 @@ class Stereo_Block(nn.Module):
     def forward(self, *feats): # 双目的情况下应该是 （x1,x2）
         feats = tuple([self.blk(x) for x in feats])
         if self.fusion:
-            feats = self.fusion(*feats)
+            feats = self.fusion(*feats) # 这里的 feats 应该是元组
         return feats
 
 
@@ -189,13 +189,10 @@ class newNAFSSR(Local_Base, StereoNet):
 
 
 if __name__ == '__main__':
-
-    skm = SKM(c = 16)
-    x = torch.randn((2, 16, 64, 64))
-
-    out = skm(x)
+    net = newNAFSSR(up_scale=4, train_size=(1, 6, 30, 90), width=48, num_blks=16, drop_path_rate=0.1, drop_out_rate=0.1, Fusion_Block="SKSCAM", Extraction_Block="NAFBlock")
+    x = torch.randn((2, 6, 30, 90))
+    out = net(x)
     print(out)
-
     pass
 
 
