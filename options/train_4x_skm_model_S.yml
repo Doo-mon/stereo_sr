@@ -21,7 +21,7 @@ network_g:
   # TODO: 这里记得要对应改
   type: newNAFSSR # 在 models/arch 文件夹下面被定义才有效
   Extraction_Block: NAFBlock
-  Fusion_block: SKSCAM
+  Fusion_Block: SKSCAM
   up_scale: 4 # 要和上面的scale一致
   
   # 下面的设置决定了网络的结构和大小

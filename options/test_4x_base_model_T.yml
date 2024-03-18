@@ -15,7 +15,7 @@ network_g:
   # TODO: 这里记得要对应改
   type: newNAFSSR
   Extraction_Block: NAFBlock
-  Fusion_block: SCAM
+  Fusion_Block: SCAM
   up_scale: 4
   width: 48
   num_blks: 16
