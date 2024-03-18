@@ -105,6 +105,7 @@ class Fusion_Block(nn.Module):
             raise ValueError("Fusion_Block is not defined")
 
     def forward(self, *feats):
+        feats = tuple(x for x in feats)
         return self.module(*feats)
 
 
