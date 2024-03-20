@@ -9,7 +9,7 @@ import argparse
 # train.py
 cmd = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29500  \
        ~/stereo_sr/train.py \
-       -opt ./options/train_4x_base_model_T.yml"
+       -opt ./options/train_4x_skm_model_T.yml"
 
 # test.py
 cmd1 = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29500  \

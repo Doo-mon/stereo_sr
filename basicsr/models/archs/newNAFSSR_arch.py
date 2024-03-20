@@ -126,8 +126,11 @@ class Extraction_Block(nn.Module):
 class Stereo_Block(nn.Module):
     def __init__(self, channel, fusion=False, drop_out_rate=0., **kwargs):
         super().__init__()
-        self.blk = Extraction_Block(channel, drop_out_rate = drop_out_rate, **kwargs)
-        self.fusion = Fusion_Block(channel, **kwargs) if fusion else None # 用fusion来控制每个块后面是否跟着融合块
+        # self.blk = Extraction_Block(channel, drop_out_rate = drop_out_rate, **kwargs)
+        # self.fusion = Fusion_Block(channel, **kwargs) if fusion else None # 用fusion来控制每个块后面是否跟着融合块
+        self.blk = NAFBlock(channel, drop_out_rate=drop_out_rate, **kwargs)
+        self.fusion = SKSCAM(channel, **kwargs) if fusion else None
+
 
     def forward(self, *feats): # 双目的情况下应该是 （x1,x2）
         feats = tuple([self.blk(x) for x in feats])
