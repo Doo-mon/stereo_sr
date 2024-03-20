@@ -16,8 +16,9 @@ class SKM(nn.Module):
         self.channel = c
         self.r = r # 通道扩张倍数
         self.m = m # 这个表示有三个空洞卷积
-
-        self.dilated_conv_list = []
+        
+        # ！！！ 不要简单的用python中的list来存储Module！！！
+        self.dilated_conv_list = nn.ModuleList()
         for i in range(self.m):
             self.dilated_conv_list.append(nn.Conv2d(self.channel, self.channel, kernel_size=3, stride=1, padding=2*(i+1), dilation=2*(i+1)))
 
