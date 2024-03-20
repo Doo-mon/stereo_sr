@@ -105,9 +105,8 @@ class Fusion_Block(nn.Module):
         else:
             raise ValueError("Fusion_Block is not defined")
 
-    def forward(self, *feats): # 这里要返回元组才行
-        feats = tuple([self.module(*feats)])
-        return feats
+    def forward(self, *feats): 
+        return self.module(*feats)
 
 
 class Extraction_Block(nn.Module):
