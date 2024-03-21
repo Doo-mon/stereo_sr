@@ -8,15 +8,16 @@ import argparse
 # python narrow_setup.py --total_gpu 4 --need_gpu 1
 # CUDA_VISIBLE_DEVICES=1
 
+# 这个代码会执行两个命令
 # train.py
-cmd1 = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29500  \
+cmd2 = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29511  \
        ~/stereo_sr/train.py \
        -opt ./options/train_4x_skm_model_T.yml"
 
 # test.py
-cmd = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29510  \
+cmd1 = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29510  \
         ~/stereo_sr/test.py \
-        -opt ./options/test_4x_base_model_T.yml"
+        -opt ./options/test_4x_skm_model_T.yml"
 
 
 def parse_setting():
