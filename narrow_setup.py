@@ -4,15 +4,17 @@ import time
 import argparse
 
 # 输入命令
-# python narrow_setup.py --total_gpu 6 --need_gpu 2 --interval 2
+# python narrow_setup.py --total_gpu 6 --need_gpu 1
+# python narrow_setup.py --total_gpu 4 --need_gpu 1
+# CUDA_VISIBLE_DEVICES=1
 
 # train.py
-cmd = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29500  \
+cmd1 = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29500  \
        ~/stereo_sr/train.py \
        -opt ./options/train_4x_skm_model_T.yml"
 
 # test.py
-cmd1 = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29500  \
+cmd = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29510  \
         ~/stereo_sr/test.py \
         -opt ./options/test_4x_base_model_T.yml"
 
@@ -115,4 +117,5 @@ if __name__ == '__main__':
     
     args = parse_setting()
     narrow_setup_multi_gpu(command = cmd, interval = args.interval, total_gpu = args.total_gpu, need_gpu = args.need_gpu)
+    narrow_setup_multi_gpu(command = cmd1, interval = args.interval, total_gpu = args.total_gpu, need_gpu = args.need_gpu)
     # narrow_setup_new(command = cmd, interval = args.interval, total_gpu = args.total_gpu)
