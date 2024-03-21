@@ -10,7 +10,7 @@ import argparse
 
 # 这个代码会执行两个命令
 # train.py
-cmd2 = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29511  \
+cmd = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29511  \
        ~/stereo_sr/train.py \
        -opt ./options/train_4x_skm_model_T.yml"
 
