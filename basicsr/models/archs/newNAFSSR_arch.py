@@ -11,7 +11,7 @@ from basicsr.models.archs.NAFSSR_arch import DropPath, SCAM
 
 
 from basicsr.models.archs.fusion_block import SKSCAM
-from basicsr.models.archs.extraction_block import MODEM
+from basicsr.models.archs.extraction_block import MODEM, HAB
 
 
 
@@ -36,6 +36,8 @@ class Extraction_Block(nn.Module):
             self.module = NAFBlock(channel, drop_out_rate=drop_out_rate, **kwargs)
         elif kwargs.get("Extraction_Block")=="MODEM":
             self.module = MODEM(channel, drop_out_rate=drop_out_rate, **kwargs)
+        elif kwargs.get("Extraction_Block")=="HAB":
+            self.module = HAB(dim=channel, num_heads=3)
         else:
             raise ValueError("Extraction_Block is not defined")
 
@@ -113,7 +115,7 @@ if __name__ == '__main__':
                     drop_path_rate=0.1, 
                     drop_out_rate=0.1, 
                     Fusion_Block="SKSCAM", 
-                    Extraction_Block="NAFBlock",
+                    Extraction_Block="HAB",
                     )
     x = torch.randn((2, 6, 30, 90))
     out = net(x)

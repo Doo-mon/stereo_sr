@@ -3,7 +3,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 from basicsr.models.archs.NAFNet_arch import LayerNorm2d, SimpleGate
+from basicsr.models.archs.arch_util import trunc_normal_, window_partition, window_reverse
 
 class MODEM(nn.Module):
     '''
@@ -71,3 +73,221 @@ class MODEM(nn.Module):
         x = self.dropout2(x)
 
         return y + x * self.gamma
+
+
+class Mlp(nn.Module):
+
+    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
+        super().__init__()
+        out_features = out_features or in_features
+        hidden_features = hidden_features or in_features
+        self.fc1 = nn.Linear(in_features, hidden_features)
+        self.act = act_layer()
+        self.fc2 = nn.Linear(hidden_features, out_features)
+        self.drop = nn.Dropout(drop)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.act(x)
+        x = self.drop(x)
+        x = self.fc2(x)
+        x = self.drop(x)
+        return x
+
+class ChannelAttention(nn.Module):
+    '''
+    Channel attention used in RCAN.
+    有略微的修改
+    '''
+
+    def __init__(self, channel, squeeze_factor = 4):
+        super(ChannelAttention, self).__init__()
+
+        new_channel = channel // squeeze_factor
+
+        self.simplegate_ca = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(in_channels=channel, out_channels=new_channel, kernel_size=1, padding=0),
+            SimpleGate(),
+            nn.Conv2d(in_channels=new_channel//2, out_channels=channel, kernel_size=1, padding=0),
+            nn.Sigmoid(),
+        )
+    def forward(self, x):
+        y = self.simplegate_ca(x)
+        return x * y
+
+class CAB(nn.Module):
+    def __init__(self, num_feat, compress_ratio=2, squeeze_factor=4):
+        super(CAB, self).__init__()
+
+        self.cab = nn.Sequential(
+            nn.Conv2d(num_feat, num_feat // compress_ratio, 3, 1, 1),
+            SimpleGate(),
+            nn.Conv2d(num_feat // (compress_ratio * 2), num_feat, 3, 1, 1),
+            ChannelAttention(num_feat, squeeze_factor)
+            )
+
+    def forward(self, x):
+        return self.cab(x)
+
+class WindowAttention(nn.Module):
+    r""" Window based multi-head self attention (W-MSA) module with relative position bias.
+    It supports both of shifted and non-shifted window.
+
+    Args:
+        dim (int): Number of input channels.
+        window_size (tuple[int]): The height and width of the window.
+        num_heads (int): Number of attention heads.
+        qkv_bias (bool, optional):  If True, add a learnable bias to query, key, value. Default: True
+        qk_scale (float | None, optional): Override default qk scale of head_dim ** -0.5 if set
+        attn_drop (float, optional): Dropout ratio of attention weight. Default: 0.0
+        proj_drop (float, optional): Dropout ratio of output. Default: 0.0
+    """
+
+    def __init__(self, dim, window_size, num_heads, qkv_bias=True, qk_scale=None, attn_drop=0., proj_drop=0.):
+
+        super().__init__()
+        self.dim = dim
+        self.window_size = window_size  # Wh, Ww
+        self.num_heads = num_heads
+        head_dim = dim // num_heads
+        self.scale = qk_scale or head_dim**-0.5
+
+        self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
+        self.attn_drop = nn.Dropout(attn_drop)
+        self.proj = nn.Linear(dim, dim)
+
+        self.proj_drop = nn.Dropout(proj_drop)
+
+        self.softmax = nn.Softmax(dim=-1)
+
+    def forward(self, x, mask=None):
+        """
+        Args:
+            x: input features with shape of (num_windows*b, n, c)
+            mask: (0/-inf) mask with shape of (num_windows, Wh*Ww, Wh*Ww) or None
+        """
+        b_, n, c = x.shape
+        qkv = self.qkv(x).reshape(b_, n, 3, self.num_heads, c // self.num_heads).permute(2, 0, 3, 1, 4)
+        q, k, v = qkv[0], qkv[1], qkv[2] 
+
+        q = q * self.scale
+        attn = (q @ k.transpose(-2, -1))
+
+        if mask is not None:
+            nw = mask.shape[0]
+            attn = attn.view(b_ // nw, nw, self.num_heads, n, n) + mask.unsqueeze(1).unsqueeze(0)
+            attn = attn.view(-1, self.num_heads, n, n)
+            attn = self.softmax(attn)
+        else:
+            attn = self.softmax(attn)
+
+        attn = self.attn_drop(attn)
+
+        x = (attn @ v).transpose(1, 2).reshape(b_, n, c)
+        x = self.proj(x)
+        x = self.proj_drop(x)
+        return x
+
+
+
+class HAB(nn.Module):
+    r""" Hybrid Attention Block.
+
+    Args:
+        dim (int): Number of input channels.
+        input_resolution (tuple[int]): Input resolution.
+        num_heads (int): Number of attention heads.
+        window_size (int): Window size.
+        shift_size (int): Shift size for SW-MSA.
+        mlp_ratio (float): Ratio of mlp hidden dim to embedding dim.
+        qkv_bias (bool, optional): If True, add a learnable bias to query, key, value. Default: True
+        qk_scale (float | None, optional): Override default qk scale of head_dim ** -0.5 if set.
+        drop (float, optional): Dropout rate. Default: 0.0
+        attn_drop (float, optional): Attention dropout rate. Default: 0.0
+        drop_path (float, optional): Stochastic depth rate. Default: 0.0
+        act_layer (nn.Module, optional): Activation layer. Default: nn.GELU
+        norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
+    """
+
+    def __init__(self,
+                 dim,
+                 num_heads,
+                 compress_ratio=3,
+                 squeeze_factor=2,
+                 conv_scale=0.01,
+                 mlp_ratio=4.,
+                 qkv_bias=True,
+                 qk_scale=None,
+                 drop=0.,
+                 attn_drop=0.,
+                 act_layer=nn.GELU,):
+        super().__init__()
+        self.dim = dim
+
+        self.num_heads = num_heads
+        self.window_size = 5
+        self.mlp_ratio = mlp_ratio
+        
+
+        self.norm1 = LayerNorm2d(dim)
+        self.attn = WindowAttention(
+            dim,
+            window_size=(3,3),
+            num_heads=num_heads,
+            qkv_bias=qkv_bias,
+            qk_scale=qk_scale,
+            attn_drop=attn_drop,
+            proj_drop=drop)
+
+        self.conv_scale = conv_scale
+        self.conv_block = CAB(num_feat=dim, compress_ratio=compress_ratio, squeeze_factor=squeeze_factor)
+
+        self.norm2 = LayerNorm2d(dim)
+        mlp_hidden_dim = int(dim * mlp_ratio)
+        self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
+
+    def forward(self, x):
+        B, C, H, W = x.size() # 2 48 30 90
+
+        input_x = x.permute(0, 2, 3, 1) # B H W C
+        x = self.norm1(x) # B C H W
+
+        # CAB
+        conv_x = self.conv_block(x)
+        conv_x = conv_x.permute(0, 2, 3, 1).contiguous().view(B, H * W, C)
+
+        shifted_x = input_x
+        attn_mask = None
+
+        # partition windows
+        x_windows = window_partition(shifted_x, self.window_size)  # nw*b, window_size, window_size, c
+        x_windows = x_windows.view(-1, self.window_size * self.window_size, C)  # nw*b, window_size*window_size, c
+
+        # W-MSA/SW-MSA  # (num_windows*b, n, c)
+        attn_windows = self.attn(x_windows, mask=attn_mask)
+
+        # merge windows
+        attn_windows = attn_windows.view(-1, self.window_size, self.window_size, C)
+        shifted_x = window_reverse(attn_windows, self.window_size, H, W)  # b h' w' c
+
+        attn_x = shifted_x
+        attn_x = attn_x.view(B, H * W, C)
+
+        # FFN
+        x = input_x.view(B, H * W, C) + attn_x + conv_x * self.conv_scale
+        x = x.view(B, H, W, C).permute(0, 3, 1, 2)
+        x = x + self.mlp(self.norm2(x).permute(0, 2, 3, 1)).permute(0, 3, 1, 2)
+
+        return x
+
+
+
+if __name__=="__main__":
+
+    # block = HAB(dim=3, num_heads=3)
+    # x = torch.randn((2, 48, 30, 90))
+    # out = block(x)
+    # print(out)
+
+    pass
