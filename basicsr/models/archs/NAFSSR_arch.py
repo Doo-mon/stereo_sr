@@ -100,7 +100,6 @@ class NAFNetSR(nn.Module):
         super().__init__()
         self.dual = dual    # dual input for stereo SR (left view, right view)
         self.intro = nn.Conv2d(in_channels=img_channel, out_channels=width, kernel_size=3, padding=1, stride=1, groups=1, bias=True)
-        # 自定义序列 方便多输入
         self.body = MySequential(
             *[DropPath(drop_path_rate, NAFBlockSR(width, fusion=(fusion_from <= i and i <= fusion_to), drop_out_rate=drop_out_rate,**kwargs)) for i in range(num_blks)]
         )
@@ -133,13 +132,9 @@ class NAFSSR(Local_Base, NAFNetSR):
 
         self.eval()
         with torch.no_grad():
-            # 下面这句话 调用了一个 replace_layer 的函数
-            # 作用： 寻找所有的 AdaptiveAvgPool2d 层，并用一个自定义的 AvgPool2d 层替换它们
             self.convert(base_size=base_size, train_size=train_size, fast_imp=fast_imp)
 
 
-
-# 下面的语句是测试用
 if __name__ == '__main__':
     # num_blks = 32
     # width = 16

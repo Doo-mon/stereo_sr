@@ -79,7 +79,6 @@ class NAFBlock(nn.Module):
 
         return y + x * self.gamma
 
-
 class NAFNet(nn.Module):
 
     def __init__(self, img_channel=3, width=16, middle_blk_num=1, enc_blk_nums=[], dec_blk_nums=[]):
@@ -194,8 +193,6 @@ if __name__ == '__main__':
 
     # inp_shape = (3, 256, 256)
 
-
-    # # 下面的语句用来计算模型的参数量和计算量
     # from ptflops import get_model_complexity_info
 
     # macs, params = get_model_complexity_info(net, inp_shape, verbose=False, print_per_layer_stat=False)
