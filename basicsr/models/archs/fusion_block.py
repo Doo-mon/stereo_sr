@@ -7,6 +7,9 @@ from basicsr.models.archs.NAFNet_arch import LayerNorm2d, SimpleGate
 
 
 class SKM(nn.Module):
+    '''
+    参考自 Stereo Image Restoration via Attention-Guided Correspondence Learning
+    '''
     def __init__(self, c, r = 2, m = 4, **kwargs):
         super().__init__()
         self.channel = c

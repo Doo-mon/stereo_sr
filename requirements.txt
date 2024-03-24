@@ -4,10 +4,12 @@ lmdb
 numpy
 opencv-python
 Pillow
-pyyaml
+PyYAML
 requests
 scikit-image
 scipy
 tb-nightly
 tqdm
 yapf
+six
+lpips
