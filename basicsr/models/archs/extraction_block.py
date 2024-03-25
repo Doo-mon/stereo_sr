@@ -183,7 +183,7 @@ class HAB(nn.Module):
 
         self.dim = dim
         self.num_heads = num_heads
-        self.window_size = 2
+        self.window_size = 5
         self.mlp_ratio = mlp_ratio
         self.conv_scale = conv_scale
         self.mlp_hidden_dim = int(dim * mlp_ratio) # mlp 隐层的通道维数

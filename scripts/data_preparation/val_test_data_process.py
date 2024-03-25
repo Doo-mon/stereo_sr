@@ -30,8 +30,22 @@ def modcrop(image, scale):
     image = image.crop((0, 0, size[0], size[1]))
     return image
 
+def modcrop_x5(image, scale):
+    size = np.array(image.size)
+    size = size - size % (scale * 5)
+    image = image.crop((0, 0, size[0], size[1]))
+    return image
+
 # 通过Bicubic获得低分辨率图像
 def get_lr_image_by_bicubic(img_path_0, scale):
+    img_0 = Image.open(img_path_0)
+    img_hr_0 = modcrop(img_0, scale) 
+    img_lr_0 = img_hr_0.resize((img_hr_0.size[0] // scale, img_hr_0.size[1] // scale), Image.BICUBIC)
+    img_hr_0 = np.array(img_hr_0)
+    img_lr_0 = np.array(img_lr_0)
+    return img_hr_0, img_lr_0
+
+def get_lr_image_by_bicubic_x5(img_path_0, scale):
     img_0 = Image.open(img_path_0)
     img_hr_0 = modcrop(img_0, scale) 
     img_lr_0 = img_hr_0.resize((img_hr_0.size[0] // scale, img_hr_0.size[1] // scale), Image.BICUBIC)
@@ -73,7 +87,7 @@ def process_Flickr1024(data_dir, data_type, scale, output_dir):
         Image.fromarray(np.uint8(img_lr_1)).save(os.path.join(lr_img_dir, 'lr1.png'))
         print(f'{i}--Flickr1024--{data_type} samples have been generated...')
 
-# 
+
 def process_KITTI2012(data_dir, data_type, scale, output_dir, choice_n = 20):
     if data_type == 'Validation':
         print("The KITTI2012 dataset is not used for validation, only for testing.")
@@ -100,7 +114,7 @@ def process_KITTI2012(data_dir, data_type, scale, output_dir, choice_n = 20):
 
     hr_dir = os.path.join(output_dir, 'hr')
     lr_dir_x2 = os.path.join(output_dir, 'lr_x2')
-    lr_dir_x4 = os.path.joint(output_dir,'lr_x4')
+    lr_dir_x4 = os.path.join(output_dir,'lr_x4')
 
     # 创建一个列表，包含0到len之间的所有偶数
     even_numbers = [i for i in range(len(l_imgs_list)) if i % 2 == 0]
@@ -109,11 +123,11 @@ def process_KITTI2012(data_dir, data_type, scale, output_dir, choice_n = 20):
 
     for i in selected_numbers:
         # 能被4整除的一定能被2整除
-        img_hr_0_x2, img_lr_0_x2 = get_lr_image_by_bicubic(l_imgs_list[i], scale = 2)
-        img_hr_1_x2, img_lr_1_x2 = get_lr_image_by_bicubic(r_imgs_list[i], scale = 2)
+        img_hr_0_x2, img_lr_0_x2 = get_lr_image_by_bicubic_x5(l_imgs_list[i], scale = 2)
+        img_hr_1_x2, img_lr_1_x2 = get_lr_image_by_bicubic_x5(r_imgs_list[i], scale = 2)
 
-        img_hr_0_x4, img_lr_0_x4 = get_lr_image_by_bicubic(l_imgs_list[i], scale = 4)
-        img_hr_1_x4, img_lr_1_x4 = get_lr_image_by_bicubic(r_imgs_list[i], scale = 4)
+        img_hr_0_x4, img_lr_0_x4 = get_lr_image_by_bicubic_x5(l_imgs_list[i], scale = 4)
+        img_hr_1_x4, img_lr_1_x4 = get_lr_image_by_bicubic_x5(r_imgs_list[i], scale = 4)
 
         img_name = os.path.basename(l_imgs_list[i])
         img_name = os.path.splitext(img_name)[0] # 000000_10
@@ -172,11 +186,11 @@ def process_KITTI2015(data_dir, data_type, scale, output_dir, choice_n = 20):
 
     for i in selected_numbers:
         # 能被4整除的一定能被2整除
-        img_hr_0_x2, img_lr_0_x2 = get_lr_image_by_bicubic(l_imgs_list[i], scale = 2)
-        img_hr_1_x2, img_lr_1_x2 = get_lr_image_by_bicubic(r_imgs_list[i], scale = 2)
+        img_hr_0_x2, img_lr_0_x2 = get_lr_image_by_bicubic_x5(l_imgs_list[i], scale = 2)
+        img_hr_1_x2, img_lr_1_x2 = get_lr_image_by_bicubic_x5(r_imgs_list[i], scale = 2)
 
-        img_hr_0_x4, img_lr_0_x4 = get_lr_image_by_bicubic(l_imgs_list[i], scale = 4)
-        img_hr_1_x4, img_lr_1_x4 = get_lr_image_by_bicubic(r_imgs_list[i], scale = 4)
+        img_hr_0_x4, img_lr_0_x4 = get_lr_image_by_bicubic_x5(l_imgs_list[i], scale = 4)
+        img_hr_1_x4, img_lr_1_x4 = get_lr_image_by_bicubic_x5(r_imgs_list[i], scale = 4)
 
         img_name = os.path.basename(l_imgs_list[i])
         img_name = os.path.splitext(img_name)[0] # 000000_10
@@ -318,8 +332,8 @@ def process_Middlebury(data_dir, data_type, scale, output_dir):
     for folder in folders:
         l_data_dir = os.path.join(data_dir, folder, 'im0.png')
         r_data_dir = os.path.join(data_dir, folder, 'im1.png')
-        img_hr_0, img_lr_0 = get_lr_image_by_bicubic(l_data_dir, scale = scale)
-        img_hr_1, img_lr_1 = get_lr_image_by_bicubic(r_data_dir, scale = scale)
+        img_hr_0, img_lr_0 = get_lr_image_by_bicubic_x5(l_data_dir, scale = scale)
+        img_hr_1, img_lr_1 = get_lr_image_by_bicubic_x5(r_data_dir, scale = scale)
 
         img_name = folder
 
@@ -350,8 +364,8 @@ def process_Middlebury2021(data_dir, data_type, scale, output_dir):
     for folder in folders:
         l_data_dir = os.path.join(data_dir, folder, 'im0.png')
         r_data_dir = os.path.join(data_dir, folder, 'im1.png')
-        img_hr_0, img_lr_0 = get_lr_image_by_bicubic(l_data_dir, scale = scale)
-        img_hr_1, img_lr_1 = get_lr_image_by_bicubic(r_data_dir, scale = scale)
+        img_hr_0, img_lr_0 = get_lr_image_by_bicubic_x5(l_data_dir, scale = scale)
+        img_hr_1, img_lr_1 = get_lr_image_by_bicubic_x5(r_data_dir, scale = scale)
 
         img_name = folder.split('-')[0]
 
