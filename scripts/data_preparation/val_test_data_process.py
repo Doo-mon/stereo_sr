@@ -47,7 +47,7 @@ def get_lr_image_by_bicubic(img_path_0, scale):
 
 def get_lr_image_by_bicubic_x5(img_path_0, scale):
     img_0 = Image.open(img_path_0)
-    img_hr_0 = modcrop(img_0, scale) 
+    img_hr_0 = modcrop_x5(img_0, scale) 
     img_lr_0 = img_hr_0.resize((img_hr_0.size[0] // scale, img_hr_0.size[1] // scale), Image.BICUBIC)
     img_hr_0 = np.array(img_hr_0)
     img_lr_0 = np.array(img_lr_0)
@@ -177,7 +177,7 @@ def process_KITTI2015(data_dir, data_type, scale, output_dir, choice_n = 20):
 
     hr_dir = os.path.join(output_dir, 'hr')
     lr_dir_x2 = os.path.join(output_dir, 'lr_x2')
-    lr_dir_x4 = os.path.joint(output_dir,'lr_x4')
+    lr_dir_x4 = os.path.join(output_dir,'lr_x4')
 
     # 创建一个列表，包含0到len之间的所有偶数
     even_numbers = [i for i in range(len(l_imgs_list)) if i % 2 == 0]
