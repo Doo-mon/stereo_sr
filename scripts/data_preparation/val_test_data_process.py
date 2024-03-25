@@ -69,8 +69,8 @@ def process_Flickr1024(data_dir, data_type, scale, output_dir):
 
     # 成对处理图像
     for i in range(0, len(imgs_list), 2):
-        img_hr_0, img_lr_0 = get_lr_image_by_bicubic(imgs_list[i], scale = scale)
-        img_hr_1, img_lr_1 = get_lr_image_by_bicubic(imgs_list[i + 1], scale = scale)
+        img_hr_0, img_lr_0 = get_lr_image_by_bicubic_x5(imgs_list[i], scale = scale)
+        img_hr_1, img_lr_1 = get_lr_image_by_bicubic_x5(imgs_list[i + 1], scale = scale)
 
         img_name = os.path.basename(imgs_list[i])
         img_name = os.path.splitext(img_name)[0] # 0001_L
