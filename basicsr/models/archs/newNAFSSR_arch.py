@@ -10,7 +10,7 @@ from basicsr.models.archs.NAFNet_arch import NAFBlock, LayerNorm2d, SimpleGate
 from basicsr.models.archs.NAFSSR_arch import DropPath, SCAM
 
 
-from basicsr.models.archs.fusion_block import SKSCAM
+from basicsr.models.archs.fusion_block import SKSCAM, MDIA
 from basicsr.models.archs.extraction_block import MODEM, HAB
 
 
@@ -22,6 +22,8 @@ class Fusion_Block(nn.Module):
             self.module = SKSCAM(channel, **kwargs)
         elif kwargs.get("Fusion_Block")=="SCAM":
             self.module = SCAM(channel, **kwargs)
+        elif kwargs.get("Fusion_Block")=="MDIA":
+            self.module = MDIA(channel, **kwargs)   
         else:
             raise ValueError("Fusion_Block is not defined")
 

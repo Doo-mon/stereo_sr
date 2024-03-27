@@ -91,3 +91,70 @@ class SKSCAM(nn.Module):
         F_r2l = F_r2l.permute(0, 3, 1, 2) * self.beta
         F_l2r = F_l2r.permute(0, 3, 1, 2) * self.gamma
         return x_l + F_r2l, x_r + F_l2r
+    
+class MDIA(nn.Module):
+    '''Multi-Dconv Interactive Attention
+    参考自 Steformer: Efficient Stereo Image Super-Resolution with Transformer
+    '''
+    def __init__(self, c, DW_Expand=2, **kwargs):
+        super().__init__()
+        self.channel = c
+        self.new_channel = c * DW_Expand
+        self.norm1 = LayerNorm2d(c)
+        self.norm2 = LayerNorm2d(c)
+        # 1x1 卷积扩大通道维
+        self.conv1 = nn.Conv2d(self.channel, self.new_channel, kernel_size=1, padding=0, stride=1, groups=1, bias=True)
+        self.conv2 = nn.Conv2d(self.channel, self.new_channel, kernel_size=1, padding=0, stride=1, groups=1, bias=True)
+        self.conv3 = nn.Conv2d(self.channel * 2, self.new_channel, kernel_size=1, padding=0, stride=1, groups=1, bias=True) # 这个因为要处理拼接的输入
+        self.conv4 = nn.Conv2d(self.channel, self.new_channel, kernel_size=1, padding=0, stride=1, groups=1, bias=True)
+        self.conv5 = nn.Conv2d(self.channel, self.new_channel, kernel_size=1, padding=0, stride=1, groups=1, bias=True)
+
+        # 3x3 dconv 卷积
+        self.dconv1 = nn.Conv2d(self.new_channel, self.new_channel, kernel_size=3, padding=1, groups=self.new_channel, bias=True)
+        self.dconv2 = nn.Conv2d(self.new_channel, self.new_channel, kernel_size=3, padding=1, groups=self.new_channel, bias=True)
+        self.dconv3 = nn.Conv2d(self.new_channel, self.new_channel, kernel_size=3, padding=1, groups=self.new_channel, bias=True)
+        self.dconv4 = nn.Conv2d(self.new_channel, self.new_channel, kernel_size=3, padding=1, groups=self.new_channel, bias=True)
+        self.dconv5 = nn.Conv2d(self.new_channel, self.new_channel, kernel_size=3, padding=1, groups=self.new_channel, bias=True)
+
+        # softmax
+        self.softmax1 = nn.Softmax(dim=-1)
+        self.softmax2 = nn.Softmax(dim=-1)
+
+        # output conv1x1
+        self.conv6 = nn.Conv2d(self.new_channel, self.channel, kernel_size=1, padding=0, stride=1, groups=1, bias=True)
+        self.conv7 = nn.Conv2d(self.new_channel, self.channel, kernel_size=1, padding=0, stride=1, groups=1, bias=True)
+
+    
+    def forward(self, x_l, x_r):
+
+        norm_l = self.norm1(x_l)
+        norm_r = self.norm2(x_r)
+        cat_l_r = torch.cat((norm_l, norm_r), dim=1)
+
+        V_l = self.dconv1(self.conv1(norm_l))
+        K_l = self.dconv2(self.conv2(norm_l))
+        Q = self.dconv3(self.conv3(cat_l_r))
+        K_r = self.dconv4(self.conv4(norm_r)) 
+        V_r = self.dconv5(self.conv5(norm_r)) 
+
+        A_r2l = self.softmax1(torch.matmul(Q, K_r.permute(0, 1, 3, 2)) / np.sqrt(self.new_channel))
+        A_l2r = self.softmax2(torch.matmul(Q, K_l.permute(0, 1, 3, 2)) / np.sqrt(self.new_channel))
+
+        F_l = self.conv6(torch.matmul(A_r2l, V_l))
+        F_r = self.conv7(torch.matmul(A_l2r, V_r))
+
+        return x_l + F_l, x_r + F_r
+
+
+
+
+if __name__ == '__main__':
+    pass
+    block = MDIA(48)
+
+    x_l = torch.randn(2, 48, 64, 32)
+    x_r = torch.randn(2, 48, 64, 32)
+
+    out_l, out_r = block(x_l, x_r)
+    print(out_l.size(), out_r.size())
+    print(out_l, out_r)

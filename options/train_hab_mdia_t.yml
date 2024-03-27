@@ -7,7 +7,7 @@
 # 如果名字含有debug 则会有一些不同
 
 # TODO: name 会有对应的文件夹 所以每个不同的设置都要改
-name: train_4x_base_model_T # 实验名称 这个会作为文件夹的名字保存到experiments文件夹下
+name: base_hab_t # 实验名称 这个会作为文件夹的名字保存到experiments文件夹下
 
 # TODO: 每次记得有不同
 num_gpu: 1 # 使用的gpu数量
@@ -20,8 +20,10 @@ manual_seed: 10 # 训练种子
 network_g:
   # TODO: 这里记得要对应改
   type: newNAFSSR # 在 models/arch 文件夹下面被定义才有效
-  Extraction_Block: NAFBlock
-  Fusion_Block: SCAM
+
+  Extraction_Block: HAB # MODEM NAFBlock HAB
+  Fusion_Block: MDIA #  SKSCAM SCAM MDIA
+
   up_scale: 4 # 要和上面的scale一致
   
   # 下面的设置决定了网络的结构和大小
@@ -45,7 +47,7 @@ train:
     T_max: 100000                    
     eta_min: !!float 1e-7
 
-  total_iter: 100000        # TODO: 这个记得不同的文件要改
+  total_iter: 100000    # TODO: 这个记得不同的文件要改
   warmup_iter: -1 # no warm up
   mixup: false
 
@@ -84,7 +86,7 @@ datasets:
     # dataloader的设置  
     use_shuffle: true
     num_worker_per_gpu: 8
-    batch_size_per_gpu: 4   # TODO: 如果爆内存，这个要改
+    batch_size_per_gpu: 8   # TODO: 如果爆内存，这个要改
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
 
