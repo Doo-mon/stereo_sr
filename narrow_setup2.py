@@ -7,13 +7,13 @@ import argparse
 # train.py
 cmd = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29443  \
        ~/stereo_sr/train.py \
-       -opt ./options/train_hab_mdia_t.yml"
+       -opt ./options/train_hab_rcsb_t.yml"
 
 
 # test.py
 cmd1 = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29444  \
         ~/stereo_sr/test.py \
-        -opt ./options/test_hab_mdia_t.yml"
+        -opt ./options/test_hab_rcsb_t.yml"
 
 
 

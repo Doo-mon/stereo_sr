@@ -7,12 +7,12 @@ import argparse
 # train.py
 cmd = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29441  \
        ~/stereo_sr/train.py \
-       -opt ./options/train_base_mdia_t.yml"
+       -opt ./options/train_base_rcsb_t.yml"
 
 # test.py
 cmd1 = "python -m torch.distributed.launch --nproc_per_node=1 --master_port=29442  \
         ~/stereo_sr/test.py \
-        -opt ./options/test_base_mdia_t.yml"
+        -opt ./options/test_base_rcsb_t.yml"
 
 def parse_setting():
     parser = argparse.ArgumentParser(description='narrow setup')
