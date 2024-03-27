@@ -1,6 +1,6 @@
 
 
-name: base_modem_t
+name: modem_mida_t
 model_type: ImageRestorationModel
 scale: 4
 num_gpu: 1 # set num_gpu: 0 for cpu mode
@@ -18,7 +18,7 @@ network_g:
 
 path:
 
-  pretrain_network_g: experiments/base_modem_t/models/net_g_latest.pth 
+  pretrain_network_g: experiments/modem_mida_t/models/net_g_latest.pth 
   strict_load_g: true
   resume_state: ~
 
