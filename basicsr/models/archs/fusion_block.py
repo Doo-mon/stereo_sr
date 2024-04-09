@@ -270,9 +270,58 @@ class RCSB(nn.Module):
         return F_l + x_l, F_r + x_r
 
 
+class CFM(nn.Module):
+    # TODO: 没有改好
+    def __init__(self, channel, t=0.2, **kwargs):
+        super().__init__()
+        self.scale = channel ** -0.5
+        self.t = t
+
+        self.norm1 = LayerNorm2d(channel)
+        self.norm2 = LayerNorm2d(channel)
+
+        self.conv1 = nn.Conv2d(channel, channel, kernel_size=1, padding=0, stride=1, groups=channel, bias=True)
+        self.conv2 = nn.Conv2d(channel, channel, kernel_size=1, padding=0, stride=1, groups=channel, bias=True)
+
+
+        self.conv3 = nn.Conv2d(channel, channel, kernel_size=1, padding=0, stride=1, groups=channel, bias=True)
+        self.conv4 = nn.Conv2d(channel, channel, kernel_size=1, padding=0, stride=1, groups=channel, bias=True)
+
+        self.alpha = nn.Parameter(torch.zeros((1, channel, 1, 1)), requires_grad=True)
+        self.beta = nn.Parameter(torch.zeros((1, channel, 1, 1)), requires_grad=True)
+
+    
+    def forward(self, x_l, x_r):
+
+        F_u = self.conv1(self.norm1(x_l)) # B, C, H, W
+        F_v = self.conv2(self.norm2(x_r))
+
+        F_u_T = F_u.permute(0, 2, 1, 3) # B, H, C, W
+        F_v_T = F_v.permute(0, 2, 1, 3) # B, H, C, W
+
+        M_l2r = (torch.matmul(F_v, F_u_T) * self.scale).softmax(dim=-1) # B, H, W, W
+        M_r2l = (torch.matmul(F_u, F_v_T) * self.scale).softmax(dim=-1) # B, H, W, W
+
+
+        F_l2r = torch.matmul(M_l2r, self.conv3(x_l).permute(0, 2, 3, 1)) # B, H, W, C
+        F_r2l = torch.matmul(M_r2l, self.conv4(x_r).permute(0, 2, 3, 1)) # B, H, W, C
+
+        M_l2r = M_l2r.mean(dim=-1).permute(0, 3, 1, 2) # B, 1, H, W
+        M_r2l = M_r2l.mean(dim=-1).permute(0, 3, 1, 2)
+
+        V_l2r = torch.where(M_l2r > self.t, torch.tensor(1), torch.tensor(0))
+        V_r2l = torch.where(M_r2l > self.t, torch.tensor(1), torch.tensor(0))
+
+        F_l = F_l2r.permute(0, 3, 1, 2) * V_l2r * self.alpha
+        F_r = F_r2l.permute(0, 3, 1, 2) * V_r2l * self.beta
+
+
+        return x_l + F_l, x_r + F_r
+
+
 if __name__ == '__main__':
     pass
-    block = RCSB(48)
+    block = CFM(48)
 
     x_l = torch.randn(2, 48, 64, 32)
     x_r = torch.randn(2, 48, 64, 32)
