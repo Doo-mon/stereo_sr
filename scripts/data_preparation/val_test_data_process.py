@@ -3,13 +3,13 @@ import argparse
 from PIL import Image
 import numpy as np
 import random
+import sys
 
 """
     NAFSSR 测试数据中  包含了   112对 Flickr1024 测试集 
                                5 对 Middlebury 数据
                                20 对 KITTI2012 数据
                                20 对 KITTI2015 数据
-
 """
 
 
@@ -18,7 +18,7 @@ def parser_setting():
     parser.add_argument("--data_dir", default="../../datasets", type=str)
     parser.add_argument("--dataset_name", default="Flickr1024",choices=["Flickr1024","KITTI2012","KITTI2015","Middlebury_test","Middlebury2021"], type=str)
     parser.add_argument("--data_type", default="Validation",choices=["Validation", "Test"], type=str)
-    parser.add_argument("--scale", default=2, type=int) # 设置放缩尺寸
+    # parser.add_argument("--scale", default=2, type=int) # 设置放缩尺寸
 
     return parser.parse_args()
 
@@ -65,26 +65,39 @@ def process_Flickr1024(data_dir, data_type, scale, output_dir):
     imgs_list = sorted(imgs_list)
 
     hr_dir = os.path.join(output_dir, 'hr')
-    lr_dir = os.path.join(output_dir, f'lr_x{scale}')
+    lr_dir_x2 = os.path.join(output_dir, 'lr_x2')
+    lr_dir_x4 = os.path.join(output_dir,'lr_x4')
 
     # 成对处理图像
     for i in range(0, len(imgs_list), 2):
-        img_hr_0, img_lr_0 = get_lr_image_by_bicubic_x5(imgs_list[i], scale = scale)
-        img_hr_1, img_lr_1 = get_lr_image_by_bicubic_x5(imgs_list[i + 1], scale = scale)
+        img_hr_0_x4, img_lr_0_x4 = get_lr_image_by_bicubic_x5(imgs_list[i], scale = 4)
+        img_hr_1_x4, img_lr_1_x4 = get_lr_image_by_bicubic_x5(imgs_list[i + 1], scale = 4)
+
+        # 这里直接用x4的crop之后的hr图像 避免出现问题
+        hr0_size = np.array(img_hr_0_x4.size)
+        hr1_size = np.array(img_hr_1_x4.size)
+        img_lr_0_x2 = Image.fromarray(np.uint8(img_hr_0_x4)).resize((hr0_size[0]//2, hr0_size[1]//2), Image.BICUBIC)
+        img_lr_1_x2 = Image.fromarray(np.uint8(img_hr_1_x4)).resize((hr1_size[0]//2, hr1_size[1]//2), Image.BICUBIC)
 
         img_name = os.path.basename(imgs_list[i])
         img_name = os.path.splitext(img_name)[0] # 0001_L
         img_name = img_name.split('_')[0] # 0001
 
         hr_img_dir = os.path.join(hr_dir, f'{img_name}')
-        lr_img_dir = os.path.join(lr_dir, f'{img_name}')
+        lr_img_dir_x4 = os.path.join(lr_dir_x4, f'{img_name}')
+        lr_img_dir_x2 = os.path.join(lr_dir_x2, f'{img_name}')
         os.makedirs(hr_img_dir, exist_ok=True)
-        os.makedirs(lr_img_dir, exist_ok=True)
-     
-        Image.fromarray(np.uint8(img_hr_0)).save(os.path.join(hr_img_dir, 'hr0.png'))
-        Image.fromarray(np.uint8(img_hr_1)).save(os.path.join(hr_img_dir, 'hr1.png'))
-        Image.fromarray(np.uint8(img_lr_0)).save(os.path.join(lr_img_dir, 'lr0.png'))
-        Image.fromarray(np.uint8(img_lr_1)).save(os.path.join(lr_img_dir, 'lr1.png'))
+        os.makedirs(lr_img_dir_x4, exist_ok=True)
+        os.makedirs(lr_img_dir_x2, exist_ok=True)
+
+        Image.fromarray(np.uint8(img_hr_0_x4)).save(os.path.join(hr_img_dir, 'hr0.png'))
+        Image.fromarray(np.uint8(img_hr_1_x4)).save(os.path.join(hr_img_dir, 'hr1.png'))
+        
+        Image.fromarray(np.uint8(img_lr_0_x4)).save(os.path.join(lr_img_dir_x4, 'lr0.png'))
+        Image.fromarray(np.uint8(img_lr_1_x4)).save(os.path.join(lr_img_dir_x4, 'lr1.png'))
+
+        Image.fromarray(np.uint8(img_lr_0_x2)).save(os.path.join(lr_img_dir_x2, 'lr0.png'))
+        Image.fromarray(np.uint8(img_lr_1_x2)).save(os.path.join(lr_img_dir_x2, 'lr1.png'))
         print(f'{i}--Flickr1024--{data_type} samples have been generated...')
 
 
@@ -123,11 +136,17 @@ def process_KITTI2012(data_dir, data_type, scale, output_dir, choice_n = 20):
 
     for i in selected_numbers:
         # 能被4整除的一定能被2整除
-        img_hr_0_x2, img_lr_0_x2 = get_lr_image_by_bicubic_x5(l_imgs_list[i], scale = 2)
-        img_hr_1_x2, img_lr_1_x2 = get_lr_image_by_bicubic_x5(r_imgs_list[i], scale = 2)
+        # img_hr_0_x2, img_lr_0_x2 = get_lr_image_by_bicubic_x5(l_imgs_list[i], scale = 2)
+        # img_hr_1_x2, img_lr_1_x2 = get_lr_image_by_bicubic_x5(r_imgs_list[i], scale = 2)
 
         img_hr_0_x4, img_lr_0_x4 = get_lr_image_by_bicubic_x5(l_imgs_list[i], scale = 4)
         img_hr_1_x4, img_lr_1_x4 = get_lr_image_by_bicubic_x5(r_imgs_list[i], scale = 4)
+
+        # 这里直接用x4的crop之后的hr图像 避免出现问题
+        hr0_size = np.array(img_hr_0_x4.size)
+        hr1_size = np.array(img_hr_1_x4.size)
+        img_lr_0_x2 = Image.fromarray(np.uint8(img_hr_0_x4)).resize((hr0_size[0]//2, hr0_size[1]//2), Image.BICUBIC)
+        img_lr_1_x2 = Image.fromarray(np.uint8(img_hr_1_x4)).resize((hr1_size[0]//2, hr1_size[1]//2), Image.BICUBIC)
 
         img_name = os.path.basename(l_imgs_list[i])
         img_name = os.path.splitext(img_name)[0] # 000000_10
@@ -148,6 +167,8 @@ def process_KITTI2012(data_dir, data_type, scale, output_dir, choice_n = 20):
 
         Image.fromarray(np.uint8(img_lr_0_x2)).save(os.path.join(lr_img_dir_x2, 'lr0.png'))
         Image.fromarray(np.uint8(img_lr_1_x2)).save(os.path.join(lr_img_dir_x2, 'lr1.png'))
+
+
         print(f'{i/2}--KITTI2012--{data_type} samples have been generated...')
 
 
@@ -185,12 +206,15 @@ def process_KITTI2015(data_dir, data_type, scale, output_dir, choice_n = 20):
     selected_numbers = random.sample(even_numbers, choice_n)
 
     for i in selected_numbers:
-        # 能被4整除的一定能被2整除
-        img_hr_0_x2, img_lr_0_x2 = get_lr_image_by_bicubic_x5(l_imgs_list[i], scale = 2)
-        img_hr_1_x2, img_lr_1_x2 = get_lr_image_by_bicubic_x5(r_imgs_list[i], scale = 2)
 
         img_hr_0_x4, img_lr_0_x4 = get_lr_image_by_bicubic_x5(l_imgs_list[i], scale = 4)
         img_hr_1_x4, img_lr_1_x4 = get_lr_image_by_bicubic_x5(r_imgs_list[i], scale = 4)
+
+        # 这里直接用x4的crop之后的hr图像 避免出现问题
+        hr0_size = np.array(img_hr_0_x4.size)
+        hr1_size = np.array(img_hr_1_x4.size)
+        img_lr_0_x2 = Image.fromarray(np.uint8(img_hr_0_x4)).resize((hr0_size[0]//2, hr0_size[1]//2), Image.BICUBIC)
+        img_lr_1_x2 = Image.fromarray(np.uint8(img_hr_1_x4)).resize((hr1_size[0]//2, hr1_size[1]//2), Image.BICUBIC)
 
         img_name = os.path.basename(l_imgs_list[i])
         img_name = os.path.splitext(img_name)[0] # 000000_10
@@ -327,25 +351,42 @@ def process_Middlebury(data_dir, data_type, scale, output_dir):
     folders = [item for item in all_items if os.path.isdir(os.path.join(data_dir, item))]
 
     hr_dir = os.path.join(output_dir, 'hr')
-    lr_dir = os.path.join(output_dir, f'lr_x{scale}')
+    lr_dir_x2 = os.path.join(output_dir, 'lr_x2')
+    lr_dir_x4 = os.path.join(output_dir,'lr_x4')
 
     for folder in folders:
         l_data_dir = os.path.join(data_dir, folder, 'im0.png')
         r_data_dir = os.path.join(data_dir, folder, 'im1.png')
-        img_hr_0, img_lr_0 = get_lr_image_by_bicubic_x5(l_data_dir, scale = scale)
-        img_hr_1, img_lr_1 = get_lr_image_by_bicubic_x5(r_data_dir, scale = scale)
+        img_hr_0_x4, img_lr_0_x4 = get_lr_image_by_bicubic_x5(l_data_dir, scale = 4)
+        img_hr_1_x4, img_lr_1_x4 = get_lr_image_by_bicubic_x5(r_data_dir, scale = 4)
+
+
+        # 这里直接用x4的crop之后的hr图像 避免出现问题
+        hr0_size = np.array(img_hr_0_x4.size)
+        hr1_size = np.array(img_hr_1_x4.size)
+        img_lr_0_x2 = Image.fromarray(np.uint8(img_hr_0_x4)).resize((hr0_size[0]//2, hr0_size[1]//2), Image.BICUBIC)
+        img_lr_1_x2 = Image.fromarray(np.uint8(img_hr_1_x4)).resize((hr1_size[0]//2, hr1_size[1]//2), Image.BICUBIC)
+
 
         img_name = folder
 
         hr_img_dir = os.path.join(hr_dir, f'{img_name}')
-        lr_img_dir = os.path.join(lr_dir, f'{img_name}')
-        os.makedirs(hr_img_dir, exist_ok=True)
-        os.makedirs(lr_img_dir, exist_ok=True)
+        lr_img_dir_x4 = os.path.join(lr_dir_x4, f'{img_name}')
+        lr_img_dir_x2 = os.path.join(lr_dir_x2, f'{img_name}')
 
-        Image.fromarray(np.uint8(img_hr_0)).save(os.path.join(hr_img_dir, 'hr0.png'))
-        Image.fromarray(np.uint8(img_hr_1)).save(os.path.join(hr_img_dir, 'hr1.png'))
-        Image.fromarray(np.uint8(img_lr_0)).save(os.path.join(lr_img_dir, 'lr0.png'))
-        Image.fromarray(np.uint8(img_lr_1)).save(os.path.join(lr_img_dir, 'lr1.png'))
+        os.makedirs(hr_img_dir, exist_ok=True)
+        os.makedirs(lr_img_dir_x4, exist_ok=True)
+        os.makedirs(lr_img_dir_x2, exist_ok=True)
+
+        Image.fromarray(np.uint8(img_hr_0_x4)).save(os.path.join(hr_img_dir, 'hr0.png'))
+        Image.fromarray(np.uint8(img_hr_1_x4)).save(os.path.join(hr_img_dir, 'hr1.png'))
+
+        Image.fromarray(np.uint8(img_lr_0_x4)).save(os.path.join(lr_img_dir_x4, 'lr0.png'))
+        Image.fromarray(np.uint8(img_lr_1_x4)).save(os.path.join(lr_img_dir_x4, 'lr1.png'))
+
+        Image.fromarray(np.uint8(img_lr_0_x2)).save(os.path.join(lr_img_dir_x2, 'lr0.png'))
+        Image.fromarray(np.uint8(img_lr_1_x2)).save(os.path.join(lr_img_dir_x2, 'lr1.png'))
+
         print(f'{folder}--Middlebury2014--{data_type} samples have been generated...')
  
 
@@ -359,26 +400,75 @@ def process_Middlebury2021(data_dir, data_type, scale, output_dir):
     folders = [item for item in all_items if os.path.isdir(os.path.join(data_dir, item))]
 
     hr_dir = os.path.join(output_dir, 'hr')
-    lr_dir = os.path.join(output_dir, f'lr_x{scale}')
+    lr_dir_x2 = os.path.join(output_dir, 'lr_x2')
+    lr_dir_x4 = os.path.join(output_dir,'lr_x4')
 
     for folder in folders:
         l_data_dir = os.path.join(data_dir, folder, 'im0.png')
         r_data_dir = os.path.join(data_dir, folder, 'im1.png')
-        img_hr_0, img_lr_0 = get_lr_image_by_bicubic_x5(l_data_dir, scale = scale)
-        img_hr_1, img_lr_1 = get_lr_image_by_bicubic_x5(r_data_dir, scale = scale)
+        img_hr_0_x4, img_lr_0_x4 = get_lr_image_by_bicubic_x5(l_data_dir, scale = 4)
+        img_hr_1_x4, img_lr_1_x4 = get_lr_image_by_bicubic_x5(r_data_dir, scale = 4)
+
+        # 这里直接用x4的crop之后的hr图像 避免出现问题
+        hr0_size = np.array(img_hr_0_x4.size)
+        hr1_size = np.array(img_hr_1_x4.size)
+        img_lr_0_x2 = Image.fromarray(np.uint8(img_hr_0_x4)).resize((hr0_size[0]//2, hr0_size[1]//2), Image.BICUBIC)
+        img_lr_1_x2 = Image.fromarray(np.uint8(img_hr_1_x4)).resize((hr1_size[0]//2, hr1_size[1]//2), Image.BICUBIC)
 
         img_name = folder.split('-')[0]
 
         hr_img_dir = os.path.join(hr_dir, f'{img_name}')
-        lr_img_dir = os.path.join(lr_dir, f'{img_name}')
-        os.makedirs(hr_img_dir, exist_ok=True)
-        os.makedirs(lr_img_dir, exist_ok=True)
+        lr_img_dir_x4 = os.path.join(lr_dir_x4, f'{img_name}')
+        lr_img_dir_x2 = os.path.join(lr_dir_x2, f'{img_name}')
 
-        Image.fromarray(np.uint8(img_hr_0)).save(os.path.join(hr_img_dir, 'hr0.png'))
-        Image.fromarray(np.uint8(img_hr_1)).save(os.path.join(hr_img_dir, 'hr1.png'))
-        Image.fromarray(np.uint8(img_lr_0)).save(os.path.join(lr_img_dir, 'lr0.png'))
-        Image.fromarray(np.uint8(img_lr_1)).save(os.path.join(lr_img_dir, 'lr1.png'))
+        os.makedirs(hr_img_dir, exist_ok=True)
+        os.makedirs(lr_img_dir_x4, exist_ok=True)
+        os.makedirs(lr_img_dir_x2, exist_ok=True)
+
+        Image.fromarray(np.uint8(img_hr_0_x4)).save(os.path.join(hr_img_dir, 'hr0.png'))
+        Image.fromarray(np.uint8(img_hr_1_x4)).save(os.path.join(hr_img_dir, 'hr1.png'))
+
+        Image.fromarray(np.uint8(img_lr_0_x4)).save(os.path.join(lr_img_dir_x4, 'lr0.png'))
+        Image.fromarray(np.uint8(img_lr_1_x4)).save(os.path.join(lr_img_dir_x4, 'lr1.png'))
+
+        Image.fromarray(np.uint8(img_lr_0_x2)).save(os.path.join(lr_img_dir_x2, 'lr0.png'))
+        Image.fromarray(np.uint8(img_lr_1_x2)).save(os.path.join(lr_img_dir_x2, 'lr1.png'))
         print(f'{folder}--Middlebury2021--{data_type} samples have been generated...')
+
+
+def temp_process():
+    name_list=["Flickr1024","KITTI2012","KITTI2015","Middlebury_test","Middlebury2021"]
+    
+    from os import path as osp
+    
+    for name in name_list:
+        data_dir = "."
+        data_dir = osp.join(data_dir,name)
+        # print(data_dir)
+        hr_dir = osp.join(data_dir,"hr")
+        lr_dir = osp.join(data_dir,"lr_x2")
+
+
+        all_items = os.listdir(hr_dir)
+        folders_1 = [os.path.join(hr_dir, item) for item in all_items]
+        folders_2 = [os.path.join(lr_dir, item) for item in all_items]
+
+        folders_1 = sorted(folders_1)
+        folders_2 = sorted(folders_2)
+
+        for i in range(len(folders_1)):
+            print(folders_1[i])
+            hr0_img = Image.open(os.path.join(folders_1[i], "hr0.png"))
+            hr1_img = Image.open(os.path.join(folders_1[i], "hr1.png"))
+
+            hr0_size = np.array(hr0_img.size)
+            hr1_size = np.array(hr1_img.size)
+            
+            lr0_img = hr0_img.resize((hr0_size[0]//2, hr0_size[1]//2), Image.BICUBIC)
+            lr1_img = hr1_img.resize((hr1_size[0]//2, hr1_size[1]//2), Image.BICUBIC)
+
+            lr0_img.save(os.path.join(folders_2[i], "lr0.png"))
+            lr1_img.save(os.path.join(folders_2[i], "lr1.png"))
 
 
 def main():
@@ -400,19 +490,13 @@ def main():
     else:
         output_dir = os.path.join(test_output_dir, args.dataset_name)
 
+    cur_module = sys.modules[__name__]
+    process_func = getattr(cur_module, f'process_{args.dataset_name}', None)
 
-    if args.dataset_name =="Flickr1024":
-        process_Flickr1024(data_dir = data_dir, data_type = args.data_type, scale = args.scale, output_dir = output_dir)
-    elif args.dataset_name =="KITTI2012":
-        process_KITTI2012(data_dir = data_dir, data_type = args.data_type, scale = args.scale, output_dir = output_dir)
-    elif args.dataset_name =="KITTI2015":
-        process_KITTI2015(data_dir = data_dir, data_type = args.data_type, scale = args.scale, output_dir = output_dir)
-    elif args.dataset_name =="Middlebury_test":
-        process_Middlebury(data_dir = data_dir, data_type = args.data_type, scale = args.scale, output_dir = output_dir)
-    elif args.dataset_name =="Middlebury2021":
-        process_Middlebury2021(data_dir = data_dir, data_type = args.data_type, scale = args.scale, output_dir = output_dir)
-
-
+    if process_func:
+        process_func(data_dir = data_dir, data_type = args.data_type, output_dir = output_dir)
+    else:
+        print(f"Dataset {args.dataset_name} is not supported.")
 
 if __name__=="__main__":
     main()
