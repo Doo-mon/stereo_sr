@@ -23,7 +23,11 @@ total_gpu = 4 # None
 need_gpu = 1 # None
 interval = 2 # None
 
-suffix = None  # 后缀
+suffix = None  # 后缀(暂时没用)
+
+create_yaml = False
+total_iter = 200000
+batch_size_per_gpu = 8
 
 
 def parse_setting():
@@ -40,6 +44,8 @@ def parse_setting():
     parser.add_argument("--f_block", type=str, help="f_block")
     parser.add_argument("--size", type=str, help="size")
     parser.add_argument("--x", type=int, help="x")
+    
+    parser.add_argument("--create_yaml", type=bool, help="create_yaml")
     
 
     return parser.parse_args()
@@ -111,6 +117,18 @@ if __name__ == '__main__':
         x = args.x
     if args.is_only_test is not None:
         is_only_test = args.is_only_test
+    if args.create_yaml is not None:
+        create_yaml = args.create_yaml
+
+
+    if create_yaml:
+        if x == 2:
+            name = f"{e_block}_{f_block}_{size}_x2"
+        else:
+            name = f"{e_block}_{f_block}_{size}"
+
+        create_cmd = f"python ~/stereo_sr/write_yaml.py --name {name} --train_num_gpu {need_gpu} --total_iter {total_iter} --batch_size_per_gpu {batch_size_per_gpu}"
+        os.system(create_cmd)
 
     
     if x == 2:
@@ -119,7 +137,7 @@ if __name__ == '__main__':
         else:
             file_name = f"{e_block}_{f_block}_{size}_x2.yml"
 
-        cmd_train = f"python -m torch.distributed.launch --nproc_per_node=1 --master_port={port}  \
+        cmd_train = f"python -m torch.distributed.launch --nproc_per_node={need_gpu} --master_port={port}  \
             ~/stereo_sr/train.py \
             -opt ./options/x2/train_{file_name}"
         cmd_test = f"python -m torch.distributed.launch --nproc_per_node=1 --master_port={port + 1}  \
@@ -131,7 +149,7 @@ if __name__ == '__main__':
         else:
             file_name = f"{e_block}_{f_block}_{size}.yml"
 
-        cmd_train = f"python -m torch.distributed.launch --nproc_per_node=1 --master_port={port}  \
+        cmd_train = f"python -m torch.distributed.launch --nproc_per_node={need_gpu} --master_port={port}  \
             ~/stereo_sr/train.py \
             -opt ./options/x4/train_{file_name}"
         cmd_test = f"python -m torch.distributed.launch --nproc_per_node=1 --master_port={port + 1}  \
@@ -144,4 +162,4 @@ if __name__ == '__main__':
     else:
         narrow_setup_multi_gpu(command = cmd_train, interval = interval, total_gpu = total_gpu, need_gpu = need_gpu)
         if is_test:
-            narrow_setup_multi_gpu(command = cmd_test, interval = interval, total_gpu = total_gpu, need_gpu = need_gpu)
+            narrow_setup_multi_gpu(command = cmd_test, interval = interval, total_gpu = total_gpu, need_gpu = 1)

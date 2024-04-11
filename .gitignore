@@ -7,7 +7,7 @@
 *results*
 *__pycache__*
 *.egg*
-*temp*
+*temp_*
 
 tb_logger/
 logs/

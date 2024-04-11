@@ -1,6 +1,7 @@
+# ======================================  测试用配置文件模板 ======================================
 
 
-name: modem_mida_t
+name: base_mdia_t
 model_type: ImageRestorationModel
 scale: 4
 num_gpu: 1 # set num_gpu: 0 for cpu mode
@@ -8,7 +9,7 @@ manual_seed: 10
 
 network_g:
   type: newNAFSSR
-  Extraction_Block: MODEM # MODEM NAFBlock HAB
+  Extraction_Block: NAFBlock # MODEM NAFBlock HAB
   Fusion_Block: MDIA #  SKSCAM SCAM MDIA
   up_scale: 4
   width: 48
@@ -18,7 +19,7 @@ network_g:
 
 path:
 
-  pretrain_network_g: experiments/modem_mida_t/models/net_g_latest.pth 
+  pretrain_network_g: experiments/base_mdia_t/models/net_g_latest.pth 
   strict_load_g: true
   resume_state: ~
 
