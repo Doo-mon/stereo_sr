@@ -10,7 +10,7 @@ import argparse
 # 可以直接在这里改，但是命令行参数优先级更高
 port = 29400 # 每次执行注意要改成不同的端口号
 
-is_test = False # True False # 是否进行测试
+is_test = True # True False # 是否进行测试
 is_only_test = False # True False # 是否进行训练 这个优先级更高
 
 e_block = "base"  # base modem hab
@@ -25,7 +25,7 @@ interval = 2 # None
 
 suffix = None  # 后缀(暂时没用)
 
-create_yaml = False
+create_yaml = True
 total_iter = 200000
 batch_size_per_gpu = 8
 
