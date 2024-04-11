@@ -24,11 +24,11 @@ def mse_loss(pred, target):
     return F.mse_loss(pred, target, reduction='none')
 
 
-# @weighted_loss
-# def charbonnier_loss(pred, target, eps=1e-12):
-#     return torch.sqrt((pred - target)**2 + eps)
+@weighted_loss
+def charbonnier_loss(pred, target, eps=1e-5):
+    return torch.sqrt((pred - target)**2 + eps**2)
 
-
+# 这几个都是pixel_opt
 class L1Loss(nn.Module):
     """L1 (mean absolute error, MAE) loss.
 
@@ -114,17 +114,17 @@ class PSNRLoss(nn.Module):
 
         return self.loss_weight * self.scale * torch.log(((pred - target) ** 2).mean(dim=(1, 2, 3)) + 1e-8).mean()
 
+class CharbonnierLoss(nn.Module):
+    """Charbonnier Loss (L2)"""
+    def __init__(self, loss_weight=1.0, reduction='mean', eps=1e-4):
+        super(CharbonnierLoss, self).__init__()
+        self.eps = eps
+        self.loss_weight = loss_weight
+        self.reduction = reduction
 
-
-# class CharbonnierLoss(nn.Module):
-#     """Charbonnier Loss (L1)"""
-
-#     def __init__(self, loss_weight=1.0, reduction='mean', eps=1e-3):
-#         super(CharbonnierLoss, self).__init__()
-#         self.eps = eps
-
-#     def forward(self, x, y):
-#         diff = x - y
-#         # loss = torch.sum(torch.sqrt(diff * diff + self.eps))
-#         loss = torch.mean(torch.sqrt((diff * diff) + (self.eps*self.eps)))
-#         return loss
+    def forward(self, pred, target, weight=None, **kwargs):
+        return self.loss_weight * charbonnier_loss(pred, target, eps=self.eps)
+        # diff = x - y
+        # # loss = torch.sum(torch.sqrt(diff * diff + self.eps))
+        # loss = torch.mean(torch.sqrt((diff * diff) + (self.eps*self.eps)))
+        # return loss
