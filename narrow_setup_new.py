@@ -121,40 +121,30 @@ if __name__ == '__main__':
         create_yaml = args.create_yaml
 
 
-    if create_yaml:
-        if x == 2:
-            name = f"{e_block}_{f_block}_{size}_x2"
-        else:
-            name = f"{e_block}_{f_block}_{size}"
+    if x == 2:
+        name = f"{e_block}_{f_block}_{size}_x2"
+    else:
+        name = f"{e_block}_{f_block}_{size}"
 
-        create_cmd = f"python ~/stereo_sr/write_yaml.py --name {name} --train_num_gpu {need_gpu} --total_iter {total_iter} --batch_size_per_gpu {batch_size_per_gpu}"
+    if suffix is not None:
+        file_name = f"{name}_{suffix}.yml"
+    else:
+        file_name = f"{name}.yml"
+
+    if create_yaml:
+        create_cmd = f"python ~/stereo_sr/write_yaml.py --name {name} --train_num_gpu {need_gpu} \
+            --total_iter {total_iter} --batch_size_per_gpu {batch_size_per_gpu}"
+        print('\n' + create_cmd)
         os.system(create_cmd)
 
     
-    if x == 2:
-        if suffix is not None:
-            file_name = f"{e_block}_{f_block}_{size}_x2_{suffix}.yml"
-        else:
-            file_name = f"{e_block}_{f_block}_{size}_x2.yml"
-
-        cmd_train = f"python -m torch.distributed.launch --nproc_per_node={need_gpu} --master_port={port}  \
+    cmd_train = f"python -m torch.distributed.launch --nproc_per_node={need_gpu} --master_port={port}  \
             ~/stereo_sr/train.py \
-            -opt ./options/x2/train_{file_name}"
-        cmd_test = f"python -m torch.distributed.launch --nproc_per_node=1 --master_port={port + 1}  \
+            -opt ./options/x{str(x)}/train_{file_name}"
+    cmd_test = f"python -m torch.distributed.launch --nproc_per_node=1 --master_port={port + 1}  \
                 ~/stereo_sr/test.py \
-                -opt ./options/x2/test_{file_name}"
-    elif x == 4:
-        if suffix is not None:
-            file_name = f"{e_block}_{f_block}_{size}_{suffix}.yml"
-        else:
-            file_name = f"{e_block}_{f_block}_{size}.yml"
-
-        cmd_train = f"python -m torch.distributed.launch --nproc_per_node={need_gpu} --master_port={port}  \
-            ~/stereo_sr/train.py \
-            -opt ./options/x4/train_{file_name}"
-        cmd_test = f"python -m torch.distributed.launch --nproc_per_node=1 --master_port={port + 1}  \
-                ~/stereo_sr/test.py \
-                -opt ./options/x4/test_{file_name}"
+                -opt ./options/x{str(x)}/test_{file_name}"
+   
 
     if is_only_test:
         narrow_setup_multi_gpu(command = cmd_test, interval = interval, total_gpu = total_gpu, need_gpu = 1)

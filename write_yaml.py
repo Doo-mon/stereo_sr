@@ -5,7 +5,7 @@ import argparse
 def parse_setting():
     parser = argparse.ArgumentParser(description='Write yaml')
 
-    parser.add_argument("--name", default="hab_scam_t_x2", type=str, help="name of the model")
+    parser.add_argument("--name", type=str, help="name of the model")
     parser.add_argument("--train_num_gpu", default=1, type=int, help="number of gpu")
     parser.add_argument("--total_iter", default=200000, type=int, help="total iteration")
     parser.add_argument("--batch_size_per_gpu", default=8, type=int, help="batch size per gpu")
@@ -20,18 +20,31 @@ def parse_setting():
 if __name__=="__main__":
 
     name = "hab_scam_t_x2"
-    
-    str_list = name.split("_") # 目前只考虑 base_mdia_t 和 base_mdia_t_x2 这两种形式
-
     train_num_gpu = 1
     model_type = "ImageRestorationModel"
     network_g_type = "newNAFSSR"
-
     total_iter = 200000
     batch_size_per_gpu = 8
     test_data_num = 5
 
+    args = parse_setting()
+    if args.name is not None:
+        name = args.name
+    if args.train_num_gpu is not None:
+        train_num_gpu = args.train_num_gpu
+    if args.total_iter is not None:
+        total_iter = args.total_iter
+    if args.batch_size_per_gpu is not None:
+        batch_size_per_gpu = args.batch_size_per_gpu
+    if args.model_type is not None:
+        model_type = args.model_type
+    if args.network_g_type is not None:
+        network_g_type = args.network_g_type
     
+
+
+
+    str_list = name.split("_") # 目前只考虑 base_mdia_t 和 base_mdia_t_x2 这两种形式
     if len(str_list) > 3 and str_list[3] == "x2":
         scale = 2
         file_num = 7
