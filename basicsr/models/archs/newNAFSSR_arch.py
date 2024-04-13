@@ -3,33 +3,19 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
 from basicsr.models.archs.arch_util import MySequential
 from basicsr.models.archs.local_arch import Local_Base
-from basicsr.models.archs.NAFNet_arch import NAFBlock, LayerNorm2d, SimpleGate
-from basicsr.models.archs.NAFSSR_arch import DropPath, SCAM
+from basicsr.models.archs.NAFSSR_arch import DropPath
 
-
-from basicsr.models.archs.fusion_block import SKSCAM, MDIA, RCSB, SDSCAM
-from basicsr.models.archs.extraction_block import MODEM, HAB
+import importlib
+fusion_module = importlib.import_module('basicsr.models.archs.fusion_block')
+extraction_module = importlib.import_module('basicsr.models.archs.extraction_block')
 
 
 class Fusion_Block(nn.Module):
     def __init__(self, channel, **kwargs):
         super().__init__()
-        if kwargs.get("Fusion_Block")=="SCAM":
-            self.module = SCAM(channel, **kwargs)
-        elif kwargs.get("Fusion_Block")=="SKSCAM":
-            self.module = SKSCAM(channel, **kwargs)
-        elif kwargs.get("Fusion_Block")=="MDIA":
-            self.module = MDIA(channel, **kwargs)
-        elif kwargs.get("Fusion_Block")=="RCSB":
-            self.module = RCSB(channel, **kwargs)
-        elif kwargs.get("Fusion_Block")=="SDSCAM":
-            self.module = SDSCAM(channel, **kwargs)
-        else:
-            raise ValueError("Fusion_Block is not defined")
-
+        self.module = getattr(fusion_module, kwargs.get("Fusion_Block"))(channel, **kwargs)
     def forward(self, *feats): 
         return self.module(*feats)
 
@@ -37,15 +23,7 @@ class Fusion_Block(nn.Module):
 class Extraction_Block(nn.Module):
     def __init__(self, channel, drop_out_rate=0., **kwargs):
         super().__init__()
-        if kwargs.get("Extraction_Block")=="NAFBlock":
-            self.module = NAFBlock(channel, drop_out_rate=drop_out_rate, **kwargs)
-        elif kwargs.get("Extraction_Block")=="MODEM":
-            self.module = MODEM(channel, drop_out_rate=drop_out_rate, **kwargs)
-        elif kwargs.get("Extraction_Block")=="HAB":
-            self.module = HAB(dim=channel, num_heads=3)
-        else:
-            raise ValueError("Extraction_Block is not defined")
-
+        self.module = getattr(extraction_module, kwargs.get("Extraction_Block"))(channel, drop_out_rate = drop_out_rate, **kwargs)    
     def forward(self, x):
         return self.module(x)
 
@@ -67,9 +45,11 @@ class StereoNet(nn.Module):
     def __init__(self, up_scale=4, width=48, num_blks=16, img_channel=3, drop_path_rate=0., drop_out_rate=0., fusion_from=-1, fusion_to=-1, dual=False, **kwargs):
         super().__init__()
         self.dual = dual
+        self.up_scale = up_scale
+        # 浅层特征提取
         self.intro = nn.Conv2d(in_channels=img_channel, out_channels=width, kernel_size=3, padding=1, stride=1, groups=1, bias=True)
-        # 自定义序列类 可以处理双目的情况 # 注意 有两个不同的 dropout 值
-        self.body = MySequential(
+        # 深层特征提取
+        self.body = MySequential( # 自定义序列类 可以处理双目的情况
             *[
                 DropPath(
                     drop_rate = drop_path_rate, 
@@ -82,10 +62,10 @@ class StereoNet(nn.Module):
             nn.Conv2d(in_channels=width, out_channels=img_channel * up_scale**2, kernel_size=3, padding=1, stride=1, groups=1, bias=True),
             nn.PixelShuffle(up_scale) # 这个主要是是将通道维数据重新排列 进而扩大分辨率
         )
-        self.up_scale = up_scale
+        
 
     def forward(self, inp):
-        inp_hr = F.interpolate(inp, scale_factor=self.up_scale, mode='bilinear')
+        inp_hr = F.interpolate(inp, scale_factor = self.up_scale, mode='bilinear')
         if self.dual:
             inp = inp.chunk(2, dim=1) # 数据集是在通道上面叠加的
         else:
@@ -111,19 +91,24 @@ class newNAFSSR(Local_Base, StereoNet):
             # 调用了一个 replace_layer 的函数 寻找所有的 AdaptiveAvgPool2d，用一个自定义的 AvgPool2d 层替换它们
             self.convert(base_size=base_size, train_size=train_size, fast_imp=fast_imp)
 
+
+
 if __name__ == '__main__':
-    net = newNAFSSR(up_scale=4, 
-                    train_size=(1, 6, 30, 90), 
-                    width=48, 
-                    num_blks=16, 
-                    drop_path_rate=0.1, 
-                    drop_out_rate=0.1, 
-                    Fusion_Block="SKSCAM", 
-                    Extraction_Block="HAB",
-                    )
-    x = torch.randn((2, 6, 30, 90))
-    out = net(x)
-    print(out)
+
+    # net  =Fusion_Block(3, Fusion_Block="SCAM")
+    # print(net)
+    # net = newNAFSSR(up_scale=4, 
+    #                 train_size=(1, 6, 30, 90), 
+    #                 width=48, 
+    #                 num_blks=16, 
+    #                 drop_path_rate=0.1, 
+    #                 drop_out_rate=0.1, 
+    #                 Fusion_Block="SKSCAM", 
+    #                 Extraction_Block="HAB",
+    #                 )
+    # x = torch.randn((2, 6, 30, 90))
+    # out = net(x)
+    # print(out)
     pass
 
 

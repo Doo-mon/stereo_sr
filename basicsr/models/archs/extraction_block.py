@@ -3,9 +3,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
+from basicsr.models.archs.NAFNet_arch import NAFBlock
 from basicsr.models.archs.NAFNet_arch import LayerNorm2d, SimpleGate
-from basicsr.models.archs.arch_util import trunc_normal_, window_partition, window_reverse
+from basicsr.models.archs.arch_util import window_partition, window_reverse
 
 class MODEM(nn.Module):
     '''
@@ -178,7 +178,7 @@ class HAB(nn.Module):
     参考自 Activating More Pixels in Image Super-Resolution Transformer
     有略微修改
     '''
-    def __init__(self, dim, num_heads, compress_ratio=3, squeeze_factor=2, conv_scale=0.01, mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0.,):
+    def __init__(self, dim, num_heads=3, compress_ratio=3, squeeze_factor=2, conv_scale=0.01, mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0.,):
         super().__init__()
 
         self.dim = dim
