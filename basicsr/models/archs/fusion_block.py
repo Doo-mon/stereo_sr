@@ -183,14 +183,11 @@ class MSDSCAM(nn.Module):
         Q_l = self.l_proj1(N_l).permute(0, 2, 3, 1)  # B, H, W, c
         Q_r = self.r_proj1(N_r).permute(0, 2, 3, 1)  # B, H, W, c
 
-
-        K_l_T = self.dailated_conv_l0(N_l) + self.dailated_conv_l1(N_l) + self.dailated_conv_l2(N_l)
-        K_r_T = self.dailated_conv_r0(N_r) + self.dailated_conv_r1(N_r) + self.dailated_conv_r2(N_r)
-
-
+        K_l_T = torch.cat((self.dailated_conv_l0(N_l),self.dailated_conv_l1(N_l),self.dailated_conv_l2(N_l)),dim=1)
+        K_r_T = torch.cat((self.dailated_conv_r0(N_r),self.dailated_conv_r1(N_r),self.dailated_conv_r2(N_r)),dim=1)
+        
         K_l_T = self.conv1(K_l_T).permute(0, 2, 1, 3) # B, H, c, W (transposed)
         K_r_T = self.conv2(K_r_T).permute(0, 2, 1, 3) # B, H, c, W (transposed)
-
 
         attention_r2l = torch.matmul(Q_l, K_r_T) * self.scale
         attention_l2r = torch.matmul(Q_r, K_l_T) * self.scale
