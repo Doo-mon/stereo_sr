@@ -106,6 +106,69 @@ class SDSCAM(nn.Module):
         return x_l + F_r2l, x_r + F_l2r
 
 
+class MSDSCAM(nn.Module):
+    def __init__(self, c, **kwargs):
+        super().__init__()
+        self.scale = c ** -0.5
+        self.m = 3
+
+        self.norm_l = LayerNorm2d(c)
+        self.norm_r = LayerNorm2d(c)
+        self.l_proj1 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+        self.r_proj1 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+
+        
+
+        self.dailated_conv_l0= nn.Conv2d(c, c, kernel_size=3, stride=1, padding=2, dilation=2)
+        self.dailated_conv_r0= nn.Conv2d(c, c, kernel_size=3, stride=1, padding=2, dilation=2)
+
+        self.dailated_conv_l1= nn.Conv2d(c, c, kernel_size=3, stride=1, padding=4, dilation=4)
+        self.dailated_conv_r1= nn.Conv2d(c, c, kernel_size=3, stride=1, padding=4, dilation=4)
+
+        self.dailated_conv_l2= nn.Conv2d(c, c, kernel_size=3, stride=1, padding=6, dilation=6)
+        self.dailated_conv_r2= nn.Conv2d(c, c, kernel_size=3, stride=1, padding=6, dilation=6)
+
+        self.conv1 = nn.Conv2d(3*c, c, kernel_size=1, stride=1, padding=0)
+        self.conv2 = nn.Conv2d(3*c, c, kernel_size=1, stride=1, padding=0)
+        
+        
+
+        self.beta = nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
+        self.gamma = nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
+
+        self.l_proj2 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+        self.r_proj2 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+
+    def forward(self, x_l, x_r):
+        N_l = self.norm_l(x_l)
+        N_r = self.norm_r(x_r)
+
+        V_l = self.l_proj2(x_l).permute(0, 2, 3, 1)  # B, H, W, c
+        V_r = self.r_proj2(x_r).permute(0, 2, 3, 1)
+
+        Q_l = self.l_proj1(N_l).permute(0, 2, 3, 1)  # B, H, W, c
+        Q_r = self.r_proj1(N_r).permute(0, 2, 3, 1)  # B, H, W, c
+
+
+        K_l_T = self.dailated_conv_l0(N_l) + self.dailated_conv_l1(N_l) + self.dailated_conv_l2(N_l)
+        K_r_T = self.dailated_conv_r0(N_r) + self.dailated_conv_r1(N_r) + self.dailated_conv_r2(N_r)
+
+
+        K_l_T = self.conv1(K_l_T).permute(0, 2, 1, 3) # B, H, c, W (transposed)
+        K_r_T = self.conv2(K_r_T).permute(0, 2, 1, 3) # B, H, c, W (transposed)
+
+
+        attention_r2l = torch.matmul(Q_l, K_r_T) * self.scale
+        attention_l2r = torch.matmul(Q_r, K_l_T) * self.scale
+
+        F_r2l = torch.matmul(torch.softmax(attention_r2l, dim=-1), V_r)  #B, H, W, c
+        F_l2r = torch.matmul(torch.softmax(attention_l2r, dim=-1), V_l) #B, H, W, c
+
+        # scale
+        F_r2l = F_r2l.permute(0, 3, 1, 2) * self.beta
+        F_l2r = F_l2r.permute(0, 3, 1, 2) * self.gamma
+        return x_l + F_r2l, x_r + F_l2r
+
 class SKSCAM(nn.Module):
     def __init__(self, c, **kwargs):
         super().__init__()
