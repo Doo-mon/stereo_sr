@@ -201,7 +201,7 @@ class MSDSCAM(nn.Module):
         return x_l + F_r2l, x_r + F_l2r
 
 class CFM(nn.Module):
-    def __init__(self, channel, t=0.2, **kwargs):
+    def __init__(self, channel, t = 0.05, **kwargs):
         super().__init__()
         self.scale = channel ** -0.5
         self.t = t
@@ -236,8 +236,9 @@ class CFM(nn.Module):
         M_l2r = M_l2r.mean(dim=-1,keepdim=True).permute(0, 3, 1, 2) # B, 1, H, W
         M_r2l = M_r2l.mean(dim=-1,keepdim=True).permute(0, 3, 1, 2)
 
-        V_l2r = (M_l2r > self.t).float()
-        V_r2l = (M_r2l > self.t).float()
+        V_l2r = (M_l2r > self.t).int()
+        V_r2l = (M_r2l > self.t).int()
+        print(V_l2r)
 
         F_l = F_l2r.permute(0, 3, 1, 2) * V_l2r * self.alpha
         F_r = F_r2l.permute(0, 3, 1, 2) * V_r2l * self.beta
@@ -428,5 +429,5 @@ if __name__ == '__main__':
     x_r = torch.randn(2, 48, 64, 32)
 
     out_l, out_r = block(x_l, x_r)
-    print(out_l.size(), out_r.size())
-    print(out_l, out_r)
+    # print(out_l.size(), out_r.size())
+    # print(out_l, out_r)
