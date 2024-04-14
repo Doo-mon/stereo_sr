@@ -236,8 +236,8 @@ class CFM(nn.Module):
         M_l2r = M_l2r.mean(dim=-1,keepdim=True).permute(0, 3, 1, 2) # B, 1, H, W
         M_r2l = M_r2l.mean(dim=-1,keepdim=True).permute(0, 3, 1, 2)
 
-        V_l2r = torch.where(M_l2r > self.t, torch.tensor(1), torch.tensor(0))
-        V_r2l = torch.where(M_r2l > self.t, torch.tensor(1), torch.tensor(0))
+        V_l2r = (M_l2r > self.t).float()
+        V_r2l = (M_r2l > self.t).float()
 
         F_l = F_l2r.permute(0, 3, 1, 2) * V_l2r * self.alpha
         F_r = F_r2l.permute(0, 3, 1, 2) * V_r2l * self.beta
