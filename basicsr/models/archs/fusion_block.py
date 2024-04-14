@@ -201,7 +201,6 @@ class MSDSCAM(nn.Module):
         return x_l + F_r2l, x_r + F_l2r
 
 class CFM(nn.Module):
-    # TODO: 没有改好
     def __init__(self, channel, t=0.2, **kwargs):
         super().__init__()
         self.scale = channel ** -0.5
@@ -210,12 +209,11 @@ class CFM(nn.Module):
         self.norm1 = LayerNorm2d(channel)
         self.norm2 = LayerNorm2d(channel)
 
-        self.conv1 = nn.Conv2d(channel, channel, kernel_size=1, padding=0, stride=1, groups=channel, bias=True)
-        self.conv2 = nn.Conv2d(channel, channel, kernel_size=1, padding=0, stride=1, groups=channel, bias=True)
+        self.conv1 = nn.Conv2d(channel, channel, kernel_size=1, padding=0, stride=1)
+        self.conv2 = nn.Conv2d(channel, channel, kernel_size=1, padding=0, stride=1)
 
-
-        self.conv3 = nn.Conv2d(channel, channel, kernel_size=1, padding=0, stride=1, groups=channel, bias=True)
-        self.conv4 = nn.Conv2d(channel, channel, kernel_size=1, padding=0, stride=1, groups=channel, bias=True)
+        self.conv3 = nn.Conv2d(channel, channel, kernel_size=1, padding=0, stride=1)
+        self.conv4 = nn.Conv2d(channel, channel, kernel_size=1, padding=0, stride=1)
 
         self.alpha = nn.Parameter(torch.zeros((1, channel, 1, 1)), requires_grad=True)
         self.beta = nn.Parameter(torch.zeros((1, channel, 1, 1)), requires_grad=True)
@@ -226,12 +224,11 @@ class CFM(nn.Module):
         F_u = self.conv1(self.norm1(x_l)) # B, C, H, W
         F_v = self.conv2(self.norm2(x_r))
 
-        F_u_T = F_u.permute(0, 2, 1, 3) # B, H, C, W
-        F_v_T = F_v.permute(0, 2, 1, 3) # B, H, C, W
+        # (B, H, W, c) x (B, H, c, W) -> (B, H, W, W)
+        S = torch.matmul(F_u.permute(0, 2, 3, 1), F_v.permute(0, 2, 1, 3)) * self.scale # B, C, H, H
 
-        M_l2r = (torch.matmul(F_v, F_u_T) * self.scale).softmax(dim=-1) # B, H, W, W
-        M_r2l = (torch.matmul(F_u, F_v_T) * self.scale).softmax(dim=-1) # B, H, W, W
-
+        M_r2l = torch.softmax(S, dim=-1)
+        M_l2r = torch.softmax(S.permute(0, 1, 3, 2), dim=-1)
 
         F_l2r = torch.matmul(M_l2r, self.conv3(x_l).permute(0, 2, 3, 1)) # B, H, W, C
         F_r2l = torch.matmul(M_r2l, self.conv4(x_r).permute(0, 2, 3, 1)) # B, H, W, C
