@@ -238,7 +238,7 @@ class CFM(nn.Module):
 
         V_l2r = (M_l2r > self.t).int()
         V_r2l = (M_r2l > self.t).int()
-        print(V_l2r)
+        
 
         F_l = F_l2r.permute(0, 3, 1, 2) * V_l2r * self.alpha
         F_r = F_r2l.permute(0, 3, 1, 2) * V_r2l * self.beta
