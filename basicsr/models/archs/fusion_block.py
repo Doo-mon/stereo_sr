@@ -233,8 +233,8 @@ class CFM(nn.Module):
         F_l2r = torch.matmul(M_l2r, self.conv3(x_l).permute(0, 2, 3, 1)) # B, H, W, C
         F_r2l = torch.matmul(M_r2l, self.conv4(x_r).permute(0, 2, 3, 1)) # B, H, W, C
 
-        M_l2r = M_l2r.mean(dim=-1).permute(0, 3, 1, 2) # B, 1, H, W
-        M_r2l = M_r2l.mean(dim=-1).permute(0, 3, 1, 2)
+        M_l2r = M_l2r.mean(dim=-1,keepdim=True).permute(0, 3, 1, 2) # B, 1, H, W
+        M_r2l = M_r2l.mean(dim=-1,keepdim=True).permute(0, 3, 1, 2)
 
         V_l2r = torch.where(M_l2r > self.t, torch.tensor(1), torch.tensor(0))
         V_r2l = torch.where(M_r2l > self.t, torch.tensor(1), torch.tensor(0))
@@ -422,11 +422,11 @@ class RCSB(nn.Module):
 
 if __name__ == '__main__':
     pass
-    # block = CFM(48)
+    block = CFM(48)
 
-    # x_l = torch.randn(2, 48, 64, 32)
-    # x_r = torch.randn(2, 48, 64, 32)
+    x_l = torch.randn(2, 48, 64, 32)
+    x_r = torch.randn(2, 48, 64, 32)
 
-    # out_l, out_r = block(x_l, x_r)
-    # print(out_l.size(), out_r.size())
-    # print(out_l, out_r)
+    out_l, out_r = block(x_l, x_r)
+    print(out_l.size(), out_r.size())
+    print(out_l, out_r)
