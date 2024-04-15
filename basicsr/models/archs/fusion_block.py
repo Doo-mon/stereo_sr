@@ -201,6 +201,9 @@ class MSDSCAM(nn.Module):
         return x_l + F_r2l, x_r + F_l2r
 
 class CFM(nn.Module):
+    '''
+    这个主要是加了那个 mask
+    '''
     def __init__(self, channel, t = 0.05, **kwargs):
         super().__init__()
         self.scale = channel ** -0.5
@@ -239,11 +242,73 @@ class CFM(nn.Module):
         V_l2r = (M_l2r > self.t).int()
         V_r2l = (M_r2l > self.t).int()
         
-
         F_l = F_l2r.permute(0, 3, 1, 2) * V_l2r * self.alpha
         F_r = F_r2l.permute(0, 3, 1, 2) * V_r2l * self.beta
 
         return x_l + F_l, x_r + F_r
+
+
+class NISIB(nn.Module):
+
+    def __init__(self, c, **kwargs):
+        super().__init__()
+        self.scale = c ** -0.5
+
+        self.norm_l = LayerNorm2d(c)
+        self.norm_r = LayerNorm2d(c)
+
+        self.l_proj1 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+        self.r_proj1 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+
+        self.l_proj2 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+        self.r_proj2 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+
+        self.l_proj3 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+        self.r_proj3 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+
+        self.beta = nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
+        self.gamma = nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
+
+        self.gdfn_l = GDFN(c, **kwargs)
+        self.gdfn_r = GDFN(c, **kwargs)
+
+
+    def forward(self, x_l, x_r):
+
+        norm_l = self.norm_l(x_l)
+        norm_r = self.norm_r(x_r)
+
+        Q_l = self.l_proj1(norm_l)
+        Q_r = self.r_proj1(norm_r)
+        K_l = self.l_proj2(norm_l)
+        K_r = self.r_proj2(norm_r)
+        V_l = self.l_proj3(norm_l)
+        V_r = self.r_proj3(norm_r)
+
+        Q_l = Q_l.view(Q_l.size(0), Q_l.size(1), -1) # B, C, H*W
+        Q_r = Q_r.view(Q_r.size(0), Q_r.size(1), -1)
+        K_l = K_l.view(K_l.size(0), K_l.size(1), -1)
+        K_r = K_r.view(K_r.size(0), K_r.size(1), -1)
+        V_l = V_l.view(V_l.size(0), V_l.size(1), -1)
+        V_r = V_r.view(V_r.size(0), V_r.size(1), -1)
+
+        Q = torch.cat((Q_l, Q_r), dim=-1)
+        K = torch.cat((K_l, K_r), dim=-1).permute(0, 2, 1)
+
+        attention = torch.matmul(Q, K) * self.scale
+
+        F_l = torch.matmul(torch.softmax(attention, dim=-1), V_l)
+        F_r = torch.matmul(torch.softmax(attention, dim=-1), V_r)
+
+        F_l = F_l.view(F_l.size(0), F_l.size(1), x_l.size(2), x_l.size(3))
+        F_r = F_r.view(F_r.size(0), F_r.size(1), x_r.size(2), x_r.size(3))
+
+        F_l = self.gdfn_l(F_l+x_l*self.beta)
+        F_r = self.gdfn_r(F_r+x_r*self.gamma)
+
+        return F_l, F_r
+
+
 
 
 
@@ -406,7 +471,7 @@ class RCSB(nn.Module):
         super().__init__()
         self.mida = MDIA_new(channel, **kwargs)
         self.gdfn1 = GDFN(channel, **kwargs)
-        self.gdfn2 = GDFN(channel, **kwargs)    
+        self.gdfn2 = GDFN(channel, **kwargs)
         self.conv1 = nn.Conv2d(channel, channel, kernel_size=1, padding=0, stride=1, groups=1, bias=True)
         self.conv2 =  nn.Conv2d(channel, channel, kernel_size=1, padding=0, stride=1, groups=1, bias=True)
 
@@ -423,11 +488,11 @@ class RCSB(nn.Module):
 
 if __name__ == '__main__':
     pass
-    block = CFM(48)
+    block = NISIB(48)
 
     x_l = torch.randn(2, 48, 64, 32)
     x_r = torch.randn(2, 48, 64, 32)
 
     out_l, out_r = block(x_l, x_r)
-    # print(out_l.size(), out_r.size())
-    # print(out_l, out_r)
+    print(out_l.size(), out_r.size())
+    print(out_l, out_r)
