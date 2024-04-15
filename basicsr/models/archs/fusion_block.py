@@ -8,7 +8,7 @@ from basicsr.models.archs.NAFNet_arch import LayerNorm2d, SimpleGate
 from einops import rearrange
 
 
-# ============================ 这部分魔改 SCAM 块============================
+# ============================ 这部分魔改 SCAM 块 ============================
 class SKM(nn.Module):
     '''
     参考自 Stereo Image Restoration via Attention-Guided Correspondence Learning
@@ -247,7 +247,6 @@ class CFM(nn.Module):
 
         return x_l + F_l, x_r + F_r
 
-
 class NISIB(nn.Module):
 
     def __init__(self, c, **kwargs):
@@ -268,10 +267,6 @@ class NISIB(nn.Module):
 
         self.beta = nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
         self.gamma = nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
-
-        self.gdfn_l = GDFN(c, **kwargs)
-        self.gdfn_r = GDFN(c, **kwargs)
-
 
     def forward(self, x_l, x_r):
 
@@ -303,10 +298,7 @@ class NISIB(nn.Module):
         F_l = F_l.view(F_l.size(0), F_l.size(1), x_l.size(2), x_l.size(3))
         F_r = F_r.view(F_r.size(0), F_r.size(1), x_r.size(2), x_r.size(3))
 
-        F_l = self.gdfn_l(F_l+x_l*self.beta)
-        F_r = self.gdfn_r(F_r+x_r*self.gamma)
-
-        return F_l, F_r
+        return F_l + x_l*self.beta, F_r + x_r*self.gamma
 
 
 
