@@ -334,6 +334,80 @@ class PAM(nn.Module):
 
 # ============================ 这部分魔改 Steformer 中的块 ============================
 
+
+class MSMDIA(nn.Module):
+    def __init__(self, c, num_heads=3,**kwargs):
+        super().__init__()
+        self.channel = c
+
+        self.num_heads = num_heads
+        self.temperature = nn.Parameter(torch.ones(self.num_heads, 1, 1))
+        # layernorm
+        self.norm1 = LayerNorm2d(c)
+        self.norm2 = LayerNorm2d(c)
+
+        # 1x1 conv
+        self.qkv_l = nn.Conv2d(self.channel, self.channel*3, kernel_size=1, padding=0, stride=1, groups=1)
+        self.qkv_r = nn.Conv2d(self.channel, self.channel*3, kernel_size=1, padding=0, stride=1, groups=1)
+
+        # 3x3 dconv
+        self.dwconv_l = nn.Conv2d(self.channel*3, self.channel*3, kernel_size=3, padding=1, groups=self.channel*3)
+        self.dwconv_r = nn.Conv2d(self.channel*3, self.channel*3, kernel_size=3, padding=1, groups=self.channel*3)
+
+
+        self.dailated_conv0= nn.Conv2d(2*c, 2*c, kernel_size=3, stride=1, padding=2, dilation=2)
+        self.dailated_conv1= nn.Conv2d(2*c, 2*c, kernel_size=3, stride=1, padding=4, dilation=4)
+        self.dailated_conv2= nn.Conv2d(2*c, 2*c, kernel_size=3, stride=1, padding=6, dilation=6)
+
+        # conv1x1 for Q
+        self.conv_Q = nn.Conv2d(self.channel*2*3, self.channel, kernel_size=1, padding=0, stride=1, groups=1)
+
+        # output conv1x1
+        self.conv1 = nn.Conv2d(self.channel, self.channel, kernel_size=1, padding=0, stride=1, groups=1)
+        self.conv2 = nn.Conv2d(self.channel, self.channel, kernel_size=1, padding=0, stride=1, groups=1)
+
+    
+    def forward(self, x_l, x_r):
+        b, c, h, w = x_l.shape
+
+        norm_l = self.norm1(x_l)
+        norm_r = self.norm2(x_r)
+
+        Q_l, K_l, V_l = self.dwconv_l(self.qkv_l(norm_l)).chunk(3, dim=1)
+        Q_r, K_r, V_r = self.dwconv_r(self.qkv_r(norm_r)).chunk(3, dim=1)
+        Q = torch.cat((Q_l, Q_r), dim=1)
+
+        Q = torch.cat((self.dailated_conv0(Q),self.dailated_conv1(Q),self.dailated_conv2(Q)),dim=1)
+        Q = self.conv_Q(Q)
+
+        # reshape
+        Q = rearrange(Q, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
+        K_l = rearrange(K_l, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
+        K_r = rearrange(K_r, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
+        V_l = rearrange(V_l, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
+        V_r = rearrange(V_r, 'b (head c) h w -> b head c (h w)', head=self.num_heads)
+
+        Q  = torch.nn.functional.normalize(Q, dim=-1)
+        K_l  = torch.nn.functional.normalize(K_l, dim=-1)
+        K_r  = torch.nn.functional.normalize(K_r, dim=-1)
+
+
+        A_r2l = (torch.matmul(Q, K_r.transpose(-2,-1)) * self.temperature).softmax(dim=-1)  # b head c c
+        A_l2r = (torch.matmul(Q, K_l.transpose(-2,-1)) * self.temperature).softmax(dim=-1)
+
+        F_l = rearrange(torch.matmul(A_r2l, V_l),'b head c (h w) -> b (head c) h w', head=self.num_heads, h=h, w=w)
+        F_r = rearrange(torch.matmul(A_l2r, V_r),'b head c (h w) -> b (head c) h w', head=self.num_heads, h=h, w=w)
+
+        F_l = self.conv1(F_l)
+        F_r = self.conv2(F_r)
+
+        return x_l + F_l, x_r + F_r
+
+
+
+
+
+
 class MDIA(nn.Module):
     '''Multi-Dconv Interactive Attention
     参考自  Restormer: Efficient Transformer for High-Resolution Image Restoration
@@ -508,7 +582,7 @@ class RCSB(nn.Module):
 
 if __name__ == '__main__':
     pass
-    block = PAM(48)
+    block = MSMDIA(48)
 
     x_l = torch.randn(2, 48, 64, 32)
     x_r = torch.randn(2, 48, 64, 32)
