@@ -247,59 +247,87 @@ class CFM(nn.Module):
 
         return x_l + F_l, x_r + F_r
 
-class NISIB(nn.Module):
 
-    def __init__(self, c, **kwargs):
-        super().__init__()
-        self.scale = c ** -0.5
 
-        self.norm_l = LayerNorm2d(c)
-        self.norm_r = LayerNorm2d(c)
+# ============================ 这部分魔改 biPAM 块 ============================
+class ResB(nn.Module):
+    def __init__(self, channels):
+        super(ResB, self).__init__()
+        self.body = nn.Sequential(
+            nn.Conv2d(channels, channels, 3, 1, 1, groups=4, bias=True),
+            nn.LeakyReLU(0.1, inplace=True),
+            nn.Conv2d(channels, channels, 3, 1, 1, groups=4, bias=True),
+        )
+    def __call__(self,x):
+        out = self.body(x)
+        return out + x
 
-        self.l_proj1 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
-        self.r_proj1 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
 
-        self.l_proj2 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
-        self.r_proj2 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+def M_Relax(M, num_pixels):
+    _, u, v = M.shape
+    M_list = []
+    M_list.append(M.unsqueeze(1))
+    for i in range(num_pixels):
+        pad = nn.ZeroPad2d(padding=(0, 0, i+1, 0))
+        pad_M = pad(M[:, :-1-i, :])
+        M_list.append(pad_M.unsqueeze(1))
+    for i in range(num_pixels):
+        pad = nn.ZeroPad2d(padding=(0, 0, 0, i+1))
+        pad_M = pad(M[:, i+1:, :])
+        M_list.append(pad_M.unsqueeze(1))
+    M_relaxed = torch.sum(torch.cat(M_list, 1), dim=1)
+    return M_relaxed
+class PAM(nn.Module):
+    def __init__(self, channels, **kwargs):
+        super(PAM, self).__init__()
 
-        self.l_proj3 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
-        self.r_proj3 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+        self.conv1 = nn.Conv2d(channels, channels, 1, 1, 0, bias=True)
+        self.conv2 = nn.Conv2d(channels, channels, 1, 1, 0, bias=True)
+        self.bq = nn.Conv2d(2*channels, channels, 1, 1, 0, groups=2, bias=True)
+        self.bs = nn.Conv2d(2*channels, channels, 1, 1, 0, groups=2, bias=True)
+        self.softmax = nn.Softmax(-1)
+        self.rb = ResB(2 * channels)
+        self.bn = nn.BatchNorm2d(2 * channels)
 
-        self.beta = nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
-        self.gamma = nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
+    def __call__(self, x_left, x_right):
+        b, c0, h0, w0 = x_left.shape
 
-    def forward(self, x_l, x_r):
+        catfea_left = torch.cat((self.conv1(x_left), x_left), 1)
+        catfea_right = torch.cat((self.conv2(x_right), x_right), 1)
 
-        norm_l = self.norm_l(x_l)
-        norm_r = self.norm_r(x_r)
 
-        Q_l = self.l_proj1(norm_l)
-        Q_r = self.r_proj1(norm_r)
-        K_l = self.l_proj2(norm_l)
-        K_r = self.r_proj2(norm_r)
-        V_l = self.l_proj3(norm_l)
-        V_r = self.r_proj3(norm_r)
+        Q = self.bq(self.rb(self.bn(catfea_left)))
+        b, c, h, w = Q.shape
+        Q = Q - torch.mean(Q, 3).unsqueeze(3).repeat(1, 1, 1, w)
+        K = self.bs(self.rb(self.bn(catfea_right)))
+        K = K - torch.mean(K, 3).unsqueeze(3).repeat(1, 1, 1, w)
 
-        Q_l = Q_l.view(Q_l.size(0), Q_l.size(1), -1) # B, C, H*W
-        Q_r = Q_r.view(Q_r.size(0), Q_r.size(1), -1)
-        K_l = K_l.view(K_l.size(0), K_l.size(1), -1)
-        K_r = K_r.view(K_r.size(0), K_r.size(1), -1)
-        V_l = V_l.view(V_l.size(0), V_l.size(1), -1)
-        V_r = V_r.view(V_r.size(0), V_r.size(1), -1)
+        score = torch.bmm(Q.permute(0, 2, 3, 1).contiguous().view(-1, w, c),                    # (B*H) * Wl * C
+                          K.permute(0, 2, 1, 3).contiguous().view(-1, c, w))                    # (B*H) * C * Wr
+        M_right_to_left = self.softmax(score)                                                   # (B*H) * Wl * Wr
+        M_left_to_right = self.softmax(score.permute(0, 2, 1))                                  # (B*H) * Wr * Wl
 
-        Q = torch.cat((Q_l, Q_r), dim=-1)
-        K = torch.cat((K_l, K_r), dim=-1).permute(0, 2, 1)
+        M_right_to_left_relaxed = M_Relax(M_right_to_left, num_pixels=2)
+        V_left = torch.bmm(M_right_to_left_relaxed.contiguous().view(-1, w).unsqueeze(1),
+                           M_left_to_right.permute(0, 2, 1).contiguous().view(-1, w).unsqueeze(2)
+                           ).detach().contiguous().view(b, 1, h, w)  # (B*H*Wr) * Wl * 1
+        M_left_to_right_relaxed = M_Relax(M_left_to_right, num_pixels=2)
+        V_right = torch.bmm(M_left_to_right_relaxed.contiguous().view(-1, w).unsqueeze(1),  # (B*H*Wl) * 1 * Wr
+                            M_right_to_left.permute(0, 2, 1).contiguous().view(-1, w).unsqueeze(2)
+                                  ).detach().contiguous().view(b, 1, h, w)   # (B*H*Wr) * Wl * 1
 
-        attention = torch.matmul(Q, K) * self.scale
+        V_left_tanh = torch.tanh(5 * V_left)
+        V_right_tanh = torch.tanh(5 * V_right)
 
-        F_l = torch.matmul(torch.softmax(attention, dim=-1), V_l)
-        F_r = torch.matmul(torch.softmax(attention, dim=-1), V_r)
+        x_leftT = torch.bmm(M_right_to_left, x_right.permute(0, 2, 3, 1).contiguous().view(-1, w0, c0)
+                            ).contiguous().view(b, h0, w0, c0).permute(0, 3, 1, 2)                           #  B, C0, H0, W0
+        x_rightT = torch.bmm(M_left_to_right, x_left.permute(0, 2, 3, 1).contiguous().view(-1, w0, c0)
+                            ).contiguous().view(b, h0, w0, c0).permute(0, 3, 1, 2)                              #  B, C0, H0, W0
+        out_left = x_left * (1 - V_left_tanh.repeat(1, c0, 1, 1)) + x_leftT * V_left_tanh.repeat(1, c0, 1, 1)
+        out_right = x_right * (1 - V_right_tanh.repeat(1, c0, 1, 1)) +  x_rightT * V_right_tanh.repeat(1, c0, 1, 1)
 
-        F_l = F_l.view(F_l.size(0), F_l.size(1), x_l.size(2), x_l.size(3))
-        F_r = F_r.view(F_r.size(0), F_r.size(1), x_r.size(2), x_r.size(3))
-
-        return F_l + x_l*self.beta, F_r + x_r*self.gamma
-
+        
+        return out_left, out_right
 
 
 
@@ -480,7 +508,7 @@ class RCSB(nn.Module):
 
 if __name__ == '__main__':
     pass
-    block = NISIB(48)
+    block = PAM(48)
 
     x_l = torch.randn(2, 48, 64, 32)
     x_r = torch.randn(2, 48, 64, 32)
