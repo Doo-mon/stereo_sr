@@ -7,17 +7,20 @@ import argparse
 # python narrow_setup_new.py --total_gpu 6 --need_gpu 1 --is_only_test False --port 29400 --is_test False --e_block base --f_block scam --size t --x 2 --interval 2
 
 
-# 可以直接在这里改，但是命令行参数优先级更高
-port = 29400 # 每次执行注意要改成不同的端口号
+# 可以直接在这里改参数，但是命令行参数优先级更高
+
+# 每次执行注意要改成不同的端口号
+port = 29400 # 最好每次不同的训练都 +2
 
 is_test = True # True False # 是否进行测试
 is_only_test = False # True False # 是否进行训练 这个优先级更高
 
+# base 会自动对应生成nafblock 其他的都是默认大写字母
 e_block = "base"  # base modem hab
 f_block = "scam"  # scam skscam mdia rcsb
 
-size =  "t"  # t s b
-x = 2 # 2 4
+size =  "t"  # t s b  模型的大小
+x = 4 # 2 4 放大倍数
 
 total_gpu = 4 # None
 need_gpu = 1 # None
@@ -25,9 +28,9 @@ interval = 2 # None
 
 suffix = None  # 后缀(暂时没用)
 
-create_yaml = True
-total_iter = 200000
-batch_size_per_gpu = 8
+create_yaml = True # 是否创建对应的训练和测试配置文件
+total_iter = 300000
+batch_size_per_gpu = 8 # 爆内存的时候调小一点
 
 
 def parse_setting():
@@ -47,7 +50,6 @@ def parse_setting():
     
     parser.add_argument("--create_yaml", type=bool, help="create_yaml")
     
-
     return parser.parse_args()
 
 # 获取某个GPU的信息
@@ -148,7 +150,6 @@ if __name__ == '__main__':
 
     if is_only_test:
         narrow_setup_multi_gpu(command = cmd_test, interval = interval, total_gpu = total_gpu, need_gpu = 1)
-
     else:
         narrow_setup_multi_gpu(command = cmd_train, interval = interval, total_gpu = total_gpu, need_gpu = need_gpu)
         if is_test:

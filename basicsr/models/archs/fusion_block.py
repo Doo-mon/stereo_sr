@@ -7,6 +7,8 @@ from basicsr.models.archs.NAFSSR_arch import SCAM
 from basicsr.models.archs.NAFNet_arch import LayerNorm2d, SimpleGate
 from einops import rearrange
 
+from basicsr.models.archs.arch_util import M_Relax
+from basicsr.models.archs.arch_util import ResB
 
 # ============================ 这部分魔改 SCAM 块 ============================
 class SKM(nn.Module):
@@ -250,33 +252,6 @@ class CFM(nn.Module):
 
 
 # ============================ 这部分魔改 biPAM 块 ============================
-class ResB(nn.Module):
-    def __init__(self, channels):
-        super(ResB, self).__init__()
-        self.body = nn.Sequential(
-            nn.Conv2d(channels, channels, 3, 1, 1, groups=4, bias=True),
-            nn.LeakyReLU(0.1, inplace=True),
-            nn.Conv2d(channels, channels, 3, 1, 1, groups=4, bias=True),
-        )
-    def __call__(self,x):
-        out = self.body(x)
-        return out + x
-
-
-def M_Relax(M, num_pixels):
-    _, u, v = M.shape
-    M_list = []
-    M_list.append(M.unsqueeze(1))
-    for i in range(num_pixels):
-        pad = nn.ZeroPad2d(padding=(0, 0, i+1, 0))
-        pad_M = pad(M[:, :-1-i, :])
-        M_list.append(pad_M.unsqueeze(1))
-    for i in range(num_pixels):
-        pad = nn.ZeroPad2d(padding=(0, 0, 0, i+1))
-        pad_M = pad(M[:, i+1:, :])
-        M_list.append(pad_M.unsqueeze(1))
-    M_relaxed = torch.sum(torch.cat(M_list, 1), dim=1)
-    return M_relaxed
 class PAM(nn.Module):
     def __init__(self, channels, **kwargs):
         super(PAM, self).__init__()
@@ -434,6 +409,8 @@ class AMSMDIA(nn.Module):
         self.conv1 = nn.Conv2d(self.channel, self.channel, kernel_size=1, padding=0, stride=1, groups=1)
         self.conv2 = nn.Conv2d(self.channel, self.channel, kernel_size=1, padding=0, stride=1, groups=1)
         
+
+        # 实验证明 这两个参数真的很有用
         self.beta = nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
         self.gamma = nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
 
@@ -474,8 +451,6 @@ class AMSMDIA(nn.Module):
         F_r = self.conv2(F_r)*self.gamma
 
         return x_l + F_l, x_r + F_r
-
-
 
 class MDIA(nn.Module):
     '''Multi-Dconv Interactive Attention
