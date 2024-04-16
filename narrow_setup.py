@@ -15,6 +15,8 @@ port = 29400 # 最好每次不同的训练都 +2
 is_test = True # True False # 是否进行测试
 is_only_test = False # True False # 是否进行训练 这个优先级更高
 
+test_model_state = 0 # 0 300000  注意：小于等于0时默认为最新的模型 
+
 # base 会自动对应生成nafblock 其他的都是默认大写字母
 e_block = "base"  # base modem hab
 f_block = "scam"  # scam skscam mdia rcsb
@@ -42,6 +44,8 @@ def parse_setting():
     parser.add_argument("--port", type=int, help="port number")
     parser.add_argument("--is_test", type=bool, help="is test")
     parser.add_argument("--is_only_test", type=bool, help="is_only_test")
+
+    parser.add_argument("--test_model_state", type=int, help="test_model_state")
 
     parser.add_argument("--e_block", type=str, help="e_block")
     parser.add_argument("--f_block", type=str, help="f_block")
@@ -121,6 +125,8 @@ if __name__ == '__main__':
         is_only_test = args.is_only_test
     if args.create_yaml is not None:
         create_yaml = args.create_yaml
+    if args.test_model_state is not None: 
+        test_model_state = args.test_model_state
 
 
     if x == 2:
@@ -135,7 +141,7 @@ if __name__ == '__main__':
 
     if create_yaml:
         create_cmd = f"python ~/stereo_sr/write_yaml.py --name {name} --train_num_gpu {need_gpu} \
-            --total_iter {total_iter} --batch_size_per_gpu {batch_size_per_gpu}"
+            --total_iter {total_iter} --batch_size_per_gpu {batch_size_per_gpu} --test_model_state {test_model_state} "
         print('\n' + create_cmd)
         os.system(create_cmd)
 

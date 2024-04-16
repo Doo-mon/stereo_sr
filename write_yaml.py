@@ -10,6 +10,7 @@ def parse_setting():
     parser.add_argument("--total_iter", default=200000, type=int, help="total iteration")
     parser.add_argument("--batch_size_per_gpu", default=8, type=int, help="batch size per gpu")
 
+    parser.add_argument("--test_model_state", type=int, help="scale of the model")
 
     parser.add_argument("--model_type", default="ImageRestorationModel", type=str, help="type of model")
     parser.add_argument("--network_g_type", default="newNAFSSR", type=str, help="type of network_g")
@@ -19,14 +20,16 @@ def parse_setting():
 
 if __name__=="__main__":
 
-    name = "hab_scam_t_x2"
+    name = "hab_scam_t_x2" 
     train_num_gpu = 1
     model_type = "ImageRestorationModel"
     network_g_type = "newNAFSSR"
     total_iter = 200000
     batch_size_per_gpu = 8
-    test_data_num = 5
+    test_data_num = 5 # 测试数据集的数量
+    test_model_state = "net_g_latest" # 不指定的话默认为最新的模型
 
+    # 命令行参数优先级更高
     args = parse_setting()
     if args.name is not None:
         name = args.name
@@ -40,10 +43,9 @@ if __name__=="__main__":
         model_type = args.model_type
     if args.network_g_type is not None:
         network_g_type = args.network_g_type
+    if (args.test_model_state is not None) and (args.test_model_state > 0):
+        test_model_state = "net_g_" + str(args.test_model_state) + ".pth"
     
-
-
-
     str_list = name.split("_") # 目前只考虑 base_mdia_t 和 base_mdia_t_x2 这两种形式
     if len(str_list) > 3 and str_list[3] == "x2":
         scale = 2
@@ -63,13 +65,14 @@ if __name__=="__main__":
         gt_size_h = 120
         gt_size_w = 360
     
-    if str_list[0] == "base":
+    if str_list[0] == "base": # 这个历史遗留问题就懒得改了 --
         e_block = "NAFBlock"
     else:
         e_block = str_list[0].upper()
 
     f_block = str_list[1].upper()
 
+    # 模型的大小设置 与NAFSSR中的设置相同
     if str_list[2] == "t":
         width = 48
         num_blks = 16
@@ -92,7 +95,7 @@ if __name__=="__main__":
         drop_out_rate = 0.
 
 
-
+    # 创建训练的配置文件
     new_train_yaml = {}
     with open("./options/train_template.yml", "r") as f:
         train_template = yaml.safe_load(f)
@@ -143,7 +146,7 @@ if __name__=="__main__":
     with open(train_save_dir, "w") as wf:
         yaml.dump(new_train_yaml, wf, sort_keys = False)
 
-
+    # 创建测试的配置文件
     new_test_yaml = {}
     with open("./options/test_template.yml", "r") as f:
         test_template = yaml.safe_load(f)
@@ -162,7 +165,7 @@ if __name__=="__main__":
         network_g["width"] = width
         network_g["num_blks"] = num_blks
 
-        new_test_yaml["path"]["pretrain_network_g"] = "experiments/" + name + "/models/net_g_latest.pth"
+        new_test_yaml["path"]["pretrain_network_g"] = "experiments/" + name + "/models/" + test_model_state + ".pth"
         for i in range(test_data_num):
             test_n = "test" + str(i)
             dataroot_lq = new_test_yaml["datasets"][test_n]["dataroot_lq"][:-1] + str(scale)
