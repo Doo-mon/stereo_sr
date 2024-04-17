@@ -19,6 +19,7 @@ def main():
     os.makedirs(output_dir_x2, exist_ok=True)
 
     for dataset_name in dataset_names:
+        print(f"Processing dataset {dataset_name} ...")
         data_dir_x4 = os.path.join(dataset_dir, dataset_name, "lr_x4")
         data_dir_x2 = os.path.join(dataset_dir, dataset_name, "lr_x2")
 
