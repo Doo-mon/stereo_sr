@@ -42,10 +42,23 @@ def main():
             L_img_x2 = L_img_x2.resize((L_img_x2.size[0] * 2, L_img_x2.size[1] * 2), Image.BICUBIC)
             R_img_x2 = R_img_x2.resize((R_img_x2.size[0] * 2, R_img_x2.size[1] * 2), Image.BICUBIC)
 
-            L_img_x4.save(os.path.join(output_dir_x4, dataset_name, item + "_L.png"))
-            R_img_x4.save(os.path.join(output_dir_x4, dataset_name, item + "_R.png"))
-            L_img_x2.save(os.path.join(output_dir_x2, dataset_name, item + "_L.png"))
-            R_img_x2.save(os.path.join(output_dir_x2, dataset_name, item + "_R.png"))
+            L_img_x4_newdir =os.path.join(output_dir_x4, dataset_name, item + "_L.png")
+            R_img_x4_newdir =os.path.join(output_dir_x4, dataset_name, item + "_R.png")
+            L_img_x2_newdir =os.path.join(output_dir_x2, dataset_name, item + "_L.png")
+            R_img_x2_newdir =os.path.join(output_dir_x2, dataset_name, item + "_R.png")
+            if not os.path.exists(L_img_x4_newdir):
+                os.makedirs(L_img_x4_newdir, exist_ok=True)
+            if not os.path.exists(R_img_x4_newdir):
+                os.makedirs(R_img_x4_newdir, exist_ok=True)
+            if not os.path.exists(L_img_x2_newdir):
+                os.makedirs(L_img_x2_newdir, exist_ok=True)
+            if not os.path.exists(R_img_x2_newdir):
+                os.makedirs(R_img_x2_newdir, exist_ok=True)
+
+            L_img_x4.save(L_img_x4_newdir)
+            R_img_x4.save(R_img_x4_newdir)
+            L_img_x2.save(L_img_x2_newdir)
+            R_img_x2.save(R_img_x2_newdir)
 
 if __name__=="__main__":
     main()
