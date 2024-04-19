@@ -93,46 +93,49 @@ class newNAFSSR(Local_Base, StereoNet):
 
 
 
-if __name__ == '__main__':
-
-    # net  =Fusion_Block(3, Fusion_Block="SCAM")
-    # print(net)
-    # net = newNAFSSR(up_scale=4, 
-    #                 train_size=(1, 6, 30, 90), 
-    #                 width=48, 
-    #                 num_blks=16, 
-    #                 drop_path_rate=0.1, 
-    #                 drop_out_rate=0.1, 
-    #                 Fusion_Block="SKSCAM", 
-    #                 Extraction_Block="HAB",
-    #                 )
-    # x = torch.randn((2, 6, 30, 90))
-    # out = net(x)
-    # print(out)
-    pass
-
-
-
 # if __name__ == '__main__':
+
+#     # net  =Fusion_Block(3, Fusion_Block="SCAM")
+#     # print(net)
+#     # net = newNAFSSR(up_scale=4, 
+#     #                 train_size=(1, 6, 30, 90), 
+#     #                 width=48, 
+#     #                 num_blks=16, 
+#     #                 drop_path_rate=0.1, 
+#     #                 drop_out_rate=0.1, 
+#     #                 Fusion_Block="SKSCAM", 
+#     #                 Extraction_Block="HAB",
+#     #                 )
+#     # x = torch.randn((2, 6, 30, 90))
+#     # out = net(x)
+#     # print(out)
 #     pass
-    # num_blks = 128
-    # width = 128
-    # droppath=0.1
-    # train_size = (1, 6, 30, 90)
 
-    # net = NAFSSR(up_scale=2,train_size=train_size, fast_imp=True, width=width, num_blks=num_blks, drop_path_rate=droppath)
 
-    # inp_shape = (6, 64, 64)
 
-    # from ptflops import get_model_complexity_info
-    # FLOPS = 0
-    # macs, params = get_model_complexity_info(net, inp_shape, verbose=False, print_per_layer_stat=True)
+if __name__ == '__main__':
+    pass
+    num_blks = 16
+    width = 48
+    droppath=0
 
-    # # params = float(params[:-4])
-    # print(params)
-    # macs = float(macs[:-4]) + FLOPS / 10 ** 9
+    train_size = (1, 6, 30, 90)
 
-    # print('mac', macs, params)
+    net = newNAFSSR(up_scale=4, train_size=train_size, fast_imp=False, Extraction_Block= "MODEM",
+                    Fusion_Block="MSDSCAM",
+                    width=width, num_blks=num_blks, drop_path_rate=droppath)
+
+    inp_shape = (6, 300, 400)
+
+    from ptflops import get_model_complexity_info
+    FLOPS = 0
+    macs, params = get_model_complexity_info(net, inp_shape, verbose=False, print_per_layer_stat=False)
+
+    # params = float(params[:-4])
+    print(params)
+    macs = float(macs[:-4]) + FLOPS / 10 ** 9
+
+    print('mac', macs, params)
 
     # from basicsr.models.archs.arch_util import measure_inference_speed
     # net = net.cuda()
