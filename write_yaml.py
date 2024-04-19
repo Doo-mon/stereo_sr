@@ -44,7 +44,7 @@ if __name__=="__main__":
     if args.network_g_type is not None:
         network_g_type = args.network_g_type
     if (args.test_model_state is not None) and (args.test_model_state > 0):
-        test_model_state = "net_g_" + str(args.test_model_state) + ".pth"
+        test_model_state = "net_g_" + str(args.test_model_state)
     
     str_list = name.split("_") # 目前只考虑 base_mdia_t 和 base_mdia_t_x2 这两种形式
     if len(str_list) > 3 and str_list[3] == "x2":
