@@ -13,3 +13,4 @@ tqdm
 yapf
 six
 lpips
+einops

@@ -8,9 +8,9 @@ manual_seed: 10 # 训练种子
 
 # ===== 原网络结构设置 （所有设置的网络都要以network_开头）=====  
 network_g:
-  type: newNAFSSR # 在 models/arch 文件夹下面被定义才有效
-  Extraction_Block: NAFBlock # MODEM NAFBlock HAB
-  Fusion_Block: MDIA #  SKSCAM SCAM MDIA
+  type: ADMSNet # 在 models/arch 文件夹下面被定义才有效 newNAFSSR
+  Extraction_Block: NAFBlock # MDDEM NAFBlock HAB
+  Fusion_Block: MDIA #  ADSCAM SKSCAM SCAM MDIA
 
   up_scale: 4 # 要和上面的scale一致
   
